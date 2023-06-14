@@ -129,6 +129,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="AccessControlClient.h" />
+    <ClInclude Include="AccessControlServer.h" />
     <ClInclude Include="AecKsBinder.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="DisplayImage.h" />
@@ -149,6 +151,8 @@
     <ClInclude Include="WaveWriter.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AccessControlClient.cpp" />
+    <ClCompile Include="AccessControlServer.cpp" />
     <ClCompile Include="AecKsBinder.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="DisplayImage.cpp" />
