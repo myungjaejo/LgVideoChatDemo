@@ -136,6 +136,8 @@
     <ClInclude Include="DisplayImage.h" />
     <ClInclude Include="FixedSizeQueue.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="json\json-forwards.h" />
+    <ClInclude Include="json\json.h" />
     <ClInclude Include="LgVideoChatDemo.h" />
     <ClInclude Include="litevad.h" />
     <ClInclude Include="Login.h" />
@@ -156,6 +158,7 @@
     <ClCompile Include="AecKsBinder.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="DisplayImage.cpp" />
+    <ClCompile Include="jsoncpp.cpp" />
     <ClCompile Include="LgVideoChatDemo.cpp" />
     <ClCompile Include="litevad.cpp" />
     <ClCompile Include="Login.cpp" />
