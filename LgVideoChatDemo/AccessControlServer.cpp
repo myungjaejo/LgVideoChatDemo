@@ -1,12 +1,8 @@
-#include <winsock2.h>
-#include <windows.h>
-#include <stdio.h>
-#include <tchar.h>
+#include "definition.h"
 #include < iostream >
 #include <new>
 #include "AccessControlServer.h"
-#include <opencv2\highgui\highgui.hpp>
-#include <opencv2\opencv.hpp>
+
 #include "LgVideoChatDemo.h"
 #include "TcpSendRecv.h"
 
@@ -230,7 +226,6 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 				if (NetworkEvents.lNetworkEvents & FD_CLOSE)
 				{
 					if (NetworkEvents.iErrorCode[FD_CLOSE_BIT] != 0)
-
 					{
 						std::cout << "FD_CLOSE failed with error on Listen Socket" << NetworkEvents.iErrorCode[FD_CLOSE_BIT] << std::endl;
 					}
@@ -263,6 +258,8 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 						if ((result = recv(Accepter, testText, sizeof(testText), 0)) != SOCKET_ERROR)
 						{
 							std::cout << "Received : " << testText << std::endl;
+
+							
 						}
 						else 
 							std::cout << "ReadData failed " << WSAGetLastError() << std::endl;
@@ -317,4 +314,28 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 	CleanUpACServer();
 	std::cout << "Access Control Server Stopped" << std::endl;
 	return 0;
+}
+
+
+static int RecvHandler(SOCKET __InputSock, char* data, int datasize)
+{
+	/* 
+	GeneralDataType *getMsg = (*GeneralDataType)data;
+
+	switch(getMsg->OPCode)
+	{
+		case REQUEST_CALLLIST:
+			break;
+
+		case REQUEST_CALL:
+			break;
+
+		case GET_STATUS:
+			break;
+
+		case
+
+
+	}
+	*/
 }

@@ -1,11 +1,7 @@
-#include <winsock2.h>
+#include "definition.h"
 #include <ws2tcpip.h>
-#include <windows.h>
-#include <stdio.h>
-#include <tchar.h>
 #include < cstdlib >
-#include <opencv2\highgui\highgui.hpp>
-#include <opencv2\opencv.hpp>
+
 #include "AccessControlClient.h"
 #include "LgVideoChatDemo.h"
 #include "TcpSendRecv.h"
