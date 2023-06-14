@@ -18,6 +18,8 @@
 #include "VideoClient.h"
 #include "litevad.h"
 #include "Login.h"
+#include "AccessControlClient.h"
+#include "AccessControlServer.h"
 
 #pragma comment(lib,"comctl32.lib")
 #ifdef _DEBUG
@@ -590,6 +592,47 @@ LRESULT OnSize(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     MoveWindow(hWndEdit, 5, cyClient - 130, cxClient - 10, 120, TRUE);
 
     return DefWindowProc(hWnd, message, wParam, lParam);
+}
+
+static int OnConnectACS(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    CStringW cstring(RemoteAddress);
+
+    PRINT(_T("Remote Address : %s Loopback %s\r\n"), cstring, Loopback ? _T("True") : _T("False"));
+
+    if (!IsACClientRunning())
+    {
+        if (ConnectToACSever(RemoteAddress, ACS_PORT))
+        {
+            std::cout << "Connected to Server" << std::endl;
+            StartAccessControlClient();
+            std::cout << "Client Started.." << std::endl;
+            return 1;
+        }
+        else
+        {
+            DisplayMessageOkBox("Connection Failed!");
+            return 0;
+        }
+
+    }
+    else
+    {
+        std::cout << "AC client running" << std::endl;
+        return 0;
+    }
+
+    return 0;
+}
+
+static int OnDisconnectACS(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    if (IsACClientRunning())
+    {
+        StopAccessControlClient();
+        std::cout << "AC Client Stopped" << std::endl;
+    }
+    return 1;
 }
 
 static int OnConnect(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
