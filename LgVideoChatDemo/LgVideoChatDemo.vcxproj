@@ -133,6 +133,7 @@
     <ClInclude Include="AccessControlServer.h" />
     <ClInclude Include="AecKsBinder.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="definition.h" />
     <ClInclude Include="DisplayImage.h" />
     <ClInclude Include="FixedSizeQueue.h" />
     <ClInclude Include="framework.h" />

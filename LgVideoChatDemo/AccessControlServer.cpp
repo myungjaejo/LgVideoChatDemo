@@ -255,7 +255,10 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 					{
 						char testText[1000];
 						int result;
-						if ((result = recv(Accepter, testText, sizeof(testText), 0)) != SOCKET_ERROR)
+						sockaddr_in saFrom;
+						int nFromLen = sizeof(sockaddr_in);
+
+						if ((result = recvfrom(Accepter, testText, sizeof(testText), 0, (sockaddr *)&saFrom, &nFromLen)) != SOCKET_ERROR)
 						{
 							std::cout << "Received : " << testText << std::endl;
 
@@ -319,23 +322,36 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 
 static int RecvHandler(SOCKET __InputSock, char* data, int datasize)
 {
-	/* 
-	GeneralDataType *getMsg = (*GeneralDataType)data;
 
-	switch(getMsg->OPCode)
+	TDeviceID *getMsg = (TDeviceID *)data;
+
+	switch(getMsg->MessageType)
 	{
-		case REQUEST_CALLLIST:
+		case Registration:
 			break;
 
-		case REQUEST_CALL:
+		case Login:
 			break;
 
-		case GET_STATUS:
+		case RequestStatus:
 			break;
 
-		case
+		case SendStatus:
+			break;
 
+		case RequestContactList:
+			break;
 
+		case RequestCall:
+			break;
+
+		case AcceptCall:
+			break;
+
+		case RejectCall:
+			break;
+
+		default:
+			break;
 	}
-	*/
 }

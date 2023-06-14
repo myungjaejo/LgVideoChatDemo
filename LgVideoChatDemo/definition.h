@@ -15,7 +15,7 @@
 #define NAME_BUFSIZE		128
 #define MAX_DEVSIZE			5
 
-typedef struct {
+typedef struct oRegisteration {
 	unsigned char MessageType;
 	unsigned int EmailSize;
 	char email[EMAIL_BUFSIZE];
@@ -25,9 +25,11 @@ typedef struct {
 	char firstName[NAME_BUFSIZE];
 	char lastName[NAME_BUFSIZE];
 	char Address[ADDRESS_BUFSIZE];
+	sockaddr_in sockaddr;
+	int sockaddrSize = sizeof(sockaddr_in);
 }TRegisteration;
 
-typedef struct {
+typedef struct oLogin {
 	unsigned char MessageType;
 	unsigned int EmailSize;
 	char email[EMAIL_BUFSIZE];
@@ -35,18 +37,37 @@ typedef struct {
 	char password[PASSWORD_BUFSIZE];
 }TLogin;
 
-typedef struct {
+typedef struct oContactList {
 	unsigned char MessageType;
 	unsigned int ListSize;
 	char ListBuf[MAX_DEVSIZE][NAME_BUFSIZE];
-}TContractList;
+}TContactList;
 
-typedef struct {
+typedef struct oDeviceID {
 	unsigned char MessageType;
 	char DevID[NAME_BUFSIZE];
 }TDeviceID;
 
-typedef struct {
+typedef struct oStatusInfo {
 	unsigned char MessageType;
 	unsigned char status;
 }TStatusInfo;
+
+typedef struct oCommandOnly {
+	unsigned char MessageType;
+	bool answer;
+}TCommandOnly;
+
+typedef enum {
+	Registration,
+	RegistrationResponse,
+	Login,
+	LoginResponse,
+	RequestStatus,
+	SendStatus,
+	RequestContactList,
+	SendContactList,
+	RequestCall,
+	AcceptCall,
+	RejectCall
+}TNetworkCommand;
