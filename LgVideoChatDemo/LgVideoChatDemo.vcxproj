@@ -135,6 +135,7 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="definition.h" />
     <ClInclude Include="DisplayImage.h" />
+    <ClInclude Include="filemanager.h" />
     <ClInclude Include="FixedSizeQueue.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="json\json-forwards.h" />
@@ -159,6 +160,7 @@
     <ClCompile Include="AecKsBinder.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="DisplayImage.cpp" />
+    <ClCompile Include="filemanager.cpp" />
     <ClCompile Include="jsoncpp.cpp" />
     <ClCompile Include="LgVideoChatDemo.cpp" />
     <ClCompile Include="litevad.cpp" />
