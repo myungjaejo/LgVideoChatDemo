@@ -329,15 +329,17 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize)
 	switch(getMsg->MessageType)
 	{
 		case Registration:
+		{
 			// Registration
-			TRegistration* regData = (TRegistration*) data;
+			TRegistration* regData = (TRegistration*)data;
 			// Store Data
 
 			// update IP info
 
 			break;
-
+		}
 		case Login:
+		{
 			// Login
 			TLogin* LoginData = (TLogin*)data;
 
@@ -352,14 +354,18 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize)
 
 			// if false :
 			break;
-
+		}
 		case RequestStatus:
+		{
 			break;
-
+		}
 		case SendStatus:
+		{
 			break;
+		}
 
 		case RequestContactList:
+		{
 			// Load stored data
 
 			// send contact list
@@ -370,24 +376,30 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize)
 			// sendto(Accepter, (char *)clist, sizeof(TContactList), 0, 0, <<sockaddr>>, <<sockaddr_len>>);
 
 			break;
-
+		}
 		case RequestCall:
-			TDeviceID* tmp = (TDeviceID*) data;
-			char* dev_id = tmp->DevID;
+		{
+			TDeviceID* tmp = (TDeviceID*)data;
+			// char* dev_id = tmp->DevID;
+			// std::cout << dev_id << std::endl;
 			// Load stored IP_addres of Receiver 
 			// sendto(Accepter, (char*)tmp, sizeof(TDeviceID), 0, 0, << sockaddr_forward >> , << sockaddr_len >> );
 			break;
-
+		}
 		case AcceptCall:
-			TDeviceID* tmp = (TDeviceID*) data;
-			char* dev_id = tmp->DevID;
+		{
+			TDeviceID* tmp = (TDeviceID*)data;
+			// char* dev_id = tmp->DevID;
+			// std::cout << dev_id << std::endl;
 			break;
-
+		}
 		case RejectCall:
-			TDeviceID* tmp = (TDeviceID*) data;
-			char* dev_id = tmp->DevID;
+		{
+			TDeviceID* tmp = (TDeviceID*)data;
+			// char* dev_id = tmp->DevID;
+			// std::cout << dev_id << std::endl;
 			break;
-
+		}
 		default:
 			break;
 	}
