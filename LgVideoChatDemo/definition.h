@@ -8,6 +8,10 @@
 #include <opencv2\highgui\highgui.hpp>
 #include <opencv2\opencv.hpp>
 
+#define ACS_PORT		12000
+#define ACS_DELAY		1000
+#define ACS_IP			"192.168.68.104"
+
 #define EMAIL_BUFSIZE		128
 #define PASSWORD_BUFSIZE	128
 #define ADDRESS_BUFSIZE		256

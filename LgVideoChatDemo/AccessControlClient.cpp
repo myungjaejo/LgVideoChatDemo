@@ -5,6 +5,7 @@
 #include "AccessControlClient.h"
 #include "LgVideoChatDemo.h"
 #include "TcpSendRecv.h"
+#include "definition.h"
 
 static HANDLE hClientEvent = INVALID_HANDLE_VALUE;
 static HANDLE hEndACClientEvent = INVALID_HANDLE_VALUE;
@@ -15,7 +16,6 @@ static SOCKET Client = INVALID_SOCKET;
 static DWORD ThreadACClientID;
 
 static DWORD WINAPI ThreadACClient(LPVOID ivalue);
-
 
 static void AccessControlClientSetExitEvent(void)
 {
@@ -269,4 +269,51 @@ static DWORD WINAPI ThreadACClient(LPVOID ivalue)
     CleanUpAccessControlClient();
     std::cout << "Access Control Client Exiting" << std::endl;
     return 0;
+}
+
+int sendMsgtoACS(char* data, int len)
+{
+    return send(Client, data, len, 0);
+}
+
+
+//static int OnConnectACS(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+int OnConnectACS(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    static char IpAdressACS[512] = ACS_IP;
+
+    if (!IsACClientRunning())
+    {
+        if (ConnectToACSever(IpAdressACS, ACS_PORT))
+        {
+            std::cout << "Connected to Server" << std::endl;
+            StartAccessControlClient();
+            std::cout << "Client Started.." << std::endl;
+            return 1;
+        }
+        else
+        {
+            std::cout << "Connection AC server Failed!" << std::endl;
+            return 0;
+        }
+
+    }
+    else
+    {
+        std::cout << "AC client running" << std::endl;
+        return 0;
+    }
+
+    return 0;
+}
+
+//static int OnDisconnectACS(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+int OnDisconnectACS(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    if (IsACClientRunning())
+    {
+        StopAccessControlClient();
+        std::cout << "AC Client Stopped" << std::endl;
+    }
+    return 1;
 }

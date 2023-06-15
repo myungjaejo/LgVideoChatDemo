@@ -13,10 +13,6 @@
 #define VOIP_REMOTE_PORT 10001
 #define VIDEO_FRAME_DELAY 100
 
-#define ACS_PORT		12000
-#define ACS_DELAY		1000
-#define ACS_IP			"192.168.68.104"
-
 extern HWND hWndMain;
 extern TVoipAttr VoipAttr;
 extern char LocalIpAddress[512];

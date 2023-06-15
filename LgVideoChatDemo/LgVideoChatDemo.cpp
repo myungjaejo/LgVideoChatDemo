@@ -4,12 +4,11 @@
 #include <Commctrl.h>
 #include <atlstr.h>
 #include <iphlpapi.h>
-#include <winsock2.h>
+#include "definition.h"
+
 #include <ws2tcpip.h>
 #include <io.h>
 #include <fcntl.h>
-#include <opencv2\highgui\highgui.hpp>
-#include <opencv2\opencv.hpp>
 #include "VoipVoice.h"
 #include "LgVideoChatDemo.h"
 #include "VideoServer.h"
@@ -20,6 +19,8 @@
 #include "Login.h"
 #include "AccessControlClient.h"
 #include "AccessControlServer.h"
+
+
 
 #pragma comment(lib,"comctl32.lib")
 #ifdef _DEBUG
@@ -594,47 +595,6 @@ LRESULT OnSize(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
-static int OnConnectACS(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-    static char IpAdressACS[512] = ACS_IP;
-    CStringW cstring(IpAdressACS);
-
-    PRINT(_T("Remote Address : %s Loopback %s\r\n"), cstring, Loopback ? _T("True") : _T("False"));
-
-    if (!IsACClientRunning())
-    {
-        if (ConnectToACSever(IpAdressACS, ACS_PORT))
-        {
-            std::cout << "Connected to Server" << std::endl;
-            StartAccessControlClient();
-            std::cout << "Client Started.." << std::endl;
-            return 1;
-        }
-        else
-        {
-            DisplayMessageOkBox("Connection Failed!");
-            return 0;
-        }
-
-    }
-    else
-    {
-        std::cout << "AC client running" << std::endl;
-        return 0;
-    }
-
-    return 0;
-}
-
-static int OnDisconnectACS(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-    if (IsACClientRunning())
-    {
-        StopAccessControlClient();
-        std::cout << "AC Client Stopped" << std::endl;
-    }
-    return 1;
-}
 
 static int OnConnect(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {

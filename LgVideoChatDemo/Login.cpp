@@ -1,6 +1,9 @@
 #include "Login.h"
 #include "Register.h"
 #include <iostream>
+#include "AccessControlClient.h"
+//#include "definition.h"
+
 #define BUTTON_LOGIN 300
 #define BUTTON_REGISTER 301
 #define BUTTON_FORGETPASSWD 302
@@ -27,6 +30,7 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     GetWindowText(hwndPassword, Passwd, maxPasswdLength);
                     printf("ID : %ls\nPASSWD : %ls\n", Email, Passwd);
                     MessageBox(hwnd, TEXT("BUTTON_LOGIN"), TEXT("TEST"), MB_OK | MB_ICONEXCLAMATION);
+                    OnConnectACS(hwnd, msg, wParam, lParam);
                     break;
                 }
                 case BUTTON_REGISTER:
@@ -38,6 +42,7 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 case BUTTON_FORGETPASSWD:
                 {
                     MessageBox(hwnd, TEXT("BUTTON_FORGETPASSWD"), TEXT("TEST"), MB_OK | MB_ICONEXCLAMATION);
+                    OnDisconnectACS(hwnd, msg, wParam, lParam);
                     break;
                 }
                 default:

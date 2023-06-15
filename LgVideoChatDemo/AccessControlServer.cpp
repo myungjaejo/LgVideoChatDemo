@@ -7,6 +7,7 @@
 #include "TcpSendRecv.h"
 #include "filemanager.h"
 #include "VideoServer.h"
+#include "definition.h"
 
 static HANDLE hACServerListenerEvent = INVALID_HANDLE_VALUE;
 static HANDLE hEndACServerEvent = INVALID_HANDLE_VALUE;
