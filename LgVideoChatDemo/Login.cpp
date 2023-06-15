@@ -4,7 +4,7 @@
 #include <wincrypt.h>
 #include <tchar.h>
 #include <regex>
-#include "AccessControlClient.h"
+#include "definition.h"
 
 #define BUTTON_LOGIN 300
 #define BUTTON_REGISTER 301
@@ -61,6 +61,14 @@ void SHA256Hash(const TCHAR* input, size_t inputLength, char* output) {
     CryptReleaseContext(hProv, 0);
 }
 
+void CopyTCharToChar(TCHAR* tcharString, char* CharString, int length)
+{
+    for (int i = 0; i < length; i++)
+    {
+        CharString[i] = (char)(tcharString[i]);
+    }
+}
+
 LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     switch (msg) 
@@ -92,9 +100,15 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
                     char PasswdHash[65];
 
-                    SHA256Hash(Email, _tcslen(Email), PasswdHash);
+                    SHA256Hash(Passwd, _tcslen(Passwd), PasswdHash);
                     std::cout << "SHA-256 : " << PasswdHash << std::endl;
 
+                    TLogin login{};
+                    login.MessageType = (char)Login;
+                    login.EmailSize = _tcslen(Email);
+                    login.PasswordHashSize = 64; // This value is always same
+                    CopyTCharToChar(Email, login.email, login.EmailSize);
+                    memcpy(login.passwordHash, PasswdHash, 64);
                     // MessageBox(hwnd, TEXT("BUTTON_LOGIN"), TEXT("TEST"), MB_OK | MB_ICONEXCLAMATION);
                     OnConnectACS(hwnd, msg, wParam, lParam);
                     break;
