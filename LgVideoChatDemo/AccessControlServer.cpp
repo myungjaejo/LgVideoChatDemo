@@ -5,6 +5,8 @@
 
 #include "LgVideoChatDemo.h"
 #include "TcpSendRecv.h"
+#include "filemanager.h"
+#include "VideoServer.h"
 
 static HANDLE hACServerListenerEvent = INVALID_HANDLE_VALUE;
 static HANDLE hEndACServerEvent = INVALID_HANDLE_VALUE;
@@ -46,6 +48,7 @@ bool StopACServer(void)
 		hThreadACServer = INVALID_HANDLE_VALUE;
 	}
 	CleanUpACServer();
+
 	return true;
 }
 
@@ -124,7 +127,7 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 	}
 
 	InternetAddr.sin_family = AF_INET;
-	InternetAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	inet_pton(AF_INET, ACS_IP, &InternetAddr.sin_addr.s_addr);
 	InternetAddr.sin_port = htons(ACS_PORT);
 	std::cout << "bind ACServer event....." << std::endl;
 	if (bind(Listener, (PSOCKADDR)&InternetAddr, sizeof(InternetAddr)) == SOCKET_ERROR)
@@ -142,6 +145,9 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 	ghEvents[0] = hEndACServerEvent;
 	ghEvents[1] = hACServerListenerEvent;
 	NumEvents = 2;
+
+	// TODO : load register file 
+	
 
 	while (1)
 	{
@@ -353,6 +359,9 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize)
 			// sendto(Accepter, (char *)sinfo, sizeof(TStatusInfo), 0, 0, <<sockaddr>>, <<sockaddr_len>>);
 
 			// if false :
+
+			//testlogin();
+
 			break;
 		}
 		case RequestStatus:

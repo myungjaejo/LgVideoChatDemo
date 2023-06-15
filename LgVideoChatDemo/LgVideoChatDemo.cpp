@@ -596,13 +596,14 @@ LRESULT OnSize(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 static int OnConnectACS(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    CStringW cstring(RemoteAddress);
+    static char IpAdressACS[512] = ACS_IP;
+    CStringW cstring(IpAdressACS);
 
     PRINT(_T("Remote Address : %s Loopback %s\r\n"), cstring, Loopback ? _T("True") : _T("False"));
 
     if (!IsACClientRunning())
     {
-        if (ConnectToACSever(RemoteAddress, ACS_PORT))
+        if (ConnectToACSever(IpAdressACS, ACS_PORT))
         {
             std::cout << "Connected to Server" << std::endl;
             StartAccessControlClient();

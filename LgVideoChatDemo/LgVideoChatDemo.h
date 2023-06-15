@@ -15,6 +15,7 @@
 
 #define ACS_PORT		12000
 #define ACS_DELAY		1000
+#define ACS_IP			"192.168.68.104"
 
 extern HWND hWndMain;
 extern TVoipAttr VoipAttr;

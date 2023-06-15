@@ -1,10 +1,29 @@
 #include "Register.h"
 #include <iostream>
+#include <tchar.h>
+#include <cstring>
+
+
 #define BUTTON_JOINUS 400
-const int maxLength = 30;
+const int maxLength = 255;
 
 HWND hwndRegisterEmail, hwndRegisterPassword, hwndRegisterConfirmPassword, hwndRegisterFirstName, hwndRegisterLastName, hwndRegisterAddress, hwndJoinUs;
 
+bool checkPasswordRule(HWND hwnd, TCHAR* Passwd, unsigned int maxLength);
+bool checkConfirmPasswd(HWND hwnd, const TCHAR* passwd, size_t passwdSize, TCHAR* confirmPasswd, size_t confirmPasswdSize);
+
+bool checkEmptyField(HWND hwnd, const TCHAR* itemName, TCHAR* itemData, size_t itemDataSize )
+{
+    if (_tcsncmp(itemData, TEXT(""), itemDataSize) == 0)
+    {
+        TCHAR message[256] = TEXT("");
+        _stprintf_s(message, _countof(message), TEXT("%s is empty. Please fill it."), itemName);
+        MessageBox(hwnd, message, TEXT("Warning"), MB_OK | MB_ICONEXCLAMATION);
+        return false;
+    }
+
+    return true;
+}
 
 LRESULT CALLBACK RegisterProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -31,6 +50,17 @@ LRESULT CALLBACK RegisterProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 GetWindowText(hwndRegisterLastName, LastName, maxLength);
                 GetWindowText(hwndRegisterAddress, Address, maxLength);
 
+                /* empty field */
+                if (checkEmptyField(hwnd, TEXT("email"), Email, sizeof(Email)) == false) break;
+                if (checkEmptyField(hwnd, TEXT("password"), Passwd, sizeof(Passwd)) == false) break;
+                if (checkEmptyField(hwnd, TEXT("confirm password"), ConfirmPasswd, sizeof(ConfirmPasswd)) == false) break;
+
+                /* check password rule */
+                if (checkPasswordRule(hwnd, Passwd, sizeof(Passwd)) == false) break;
+
+                /* check confirm password */
+                if (checkConfirmPasswd(hwnd, Passwd, _tcslen(Passwd), ConfirmPasswd, _tcslen(ConfirmPasswd)) == false) break;
+
                 printf("ID : %ls\nPASSWD : %ls\nConfirmPasswd : %ls\nFirstName : %ls\nLastName : %ls\nAddress : %ls\n", Email, Passwd, ConfirmPasswd, FirstName, LastName, Address);
                 MessageBox(hwnd, TEXT("BUTTON_JOINUS"), TEXT("TEST"), MB_OK | MB_ICONEXCLAMATION);
                 break;
@@ -55,6 +85,64 @@ LRESULT CALLBACK RegisterProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     }
 }
 
+bool checkPasswordRule(HWND hwnd, TCHAR* Passwd, unsigned int maxLength)
+{
+    int nLength = WideCharToMultiByte(CP_ACP, 0, Passwd, -1, NULL, 0, NULL, NULL);
+
+    bool numExist = false;
+    bool symExist = false;
+
+    char* outbuf = new char[nLength + 1];
+    memset(outbuf, 0, nLength + 1);
+
+    WideCharToMultiByte(CP_ACP, 0, Passwd, -1, outbuf, nLength, NULL, NULL);
+
+    for (int i = 0; i < nLength; i++)
+    {
+        if (outbuf[i] >= 48 && outbuf[i] <= 57)
+            numExist = true;
+        if (outbuf[i] >= 33 && outbuf[i] <= 47)
+            symExist = true;
+        if (outbuf[i] >= 58 && outbuf[i] <= 64)
+            symExist = true;
+        if (outbuf[i] >= 91 && outbuf[i] <= 96)
+            symExist = true;
+        if (outbuf[i] >= 123 && outbuf[i] <= 126)
+            symExist = true;
+    }
+
+    delete[] outbuf;
+
+    if (nLength < 11)
+    {
+        MessageBox(hwnd, TEXT("Lenth of password should over 10 characters"), TEXT("Warning"), MB_OK | MB_ICONEXCLAMATION);
+        return false;
+    }
+    if (numExist == false)
+    {
+        MessageBox(hwnd, TEXT("Password should contain 1 number"), TEXT("Warning"), MB_OK | MB_ICONEXCLAMATION);
+        return false;
+    }
+    if (symExist == false)
+    {
+        MessageBox(hwnd, TEXT("Lenth of password should over 1 symbol"), TEXT("Warning"), MB_OK | MB_ICONEXCLAMATION);
+        return false;
+    }
+
+    return true;
+}
+
+bool checkConfirmPasswd(HWND hwnd, const TCHAR* passwd, size_t passwdSize, TCHAR* confirmPasswd, size_t confirmPasswdSize)
+{
+    if (passwdSize == confirmPasswdSize && _tcsncmp(passwd, confirmPasswd, passwdSize) == 0)
+    {
+        return true;
+    }
+
+    MessageBox(hwnd, TEXT("Confirm password is not same as password."), TEXT("Warning"), MB_OK | MB_ICONEXCLAMATION);
+    return false;
+}
+
 
 void RegisterCreateForm(HWND parentHwnd)
 {
@@ -71,7 +159,7 @@ void RegisterCreateForm(HWND parentHwnd)
         L"Register",
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
         CW_USEDEFAULT, CW_USEDEFAULT, 350, 500,
-        NULL, NULL, wc.hInstance, NULL
+        parentHwnd, NULL, wc.hInstance, NULL
     );
 
     HWND hwndRegisterEmailLabel = CreateWindowEx(
