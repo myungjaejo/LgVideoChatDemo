@@ -8,6 +8,7 @@
 #include <opencv2\highgui\highgui.hpp>
 #include <opencv2\opencv.hpp>
 
+#define GENERAL_BUFSIZE		128
 #define EMAIL_BUFSIZE		128
 #define PASSWORD_BUFSIZE	128
 #define ADDRESS_BUFSIZE		256
@@ -33,8 +34,8 @@ typedef struct oLogin {
 	unsigned char MessageType;
 	unsigned int EmailSize;
 	char email[EMAIL_BUFSIZE];
-	unsigned int PasswordSize;
-	char password[PASSWORD_BUFSIZE];
+	unsigned int PasswordHashSize;
+	char passwordHash[PASSWORD_BUFSIZE];
 }TLogin;
 
 typedef struct oContactList {
@@ -57,6 +58,13 @@ typedef struct oCommandOnly {
 	unsigned char MessageType;
 	bool answer;
 }TCommandOnly;
+
+// can be used simple response
+typedef struct oRspWithMessage {
+	unsigned char MessageType;
+	unsigned char MessageLen;
+	unsigned char Message[GENERAL_BUFSIZE];
+}TRspWithMessage;
 
 typedef enum {
 	Registration,
