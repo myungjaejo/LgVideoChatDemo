@@ -5,6 +5,7 @@
 #include <tchar.h>
 #include <regex>
 #include "definition.h"
+#include "AccessControlClient.h"
 
 #define BUTTON_LOGIN 300
 #define BUTTON_REGISTER 301

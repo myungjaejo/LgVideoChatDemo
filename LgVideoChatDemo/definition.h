@@ -1,12 +1,12 @@
 #pragma once
 
-#include <winsock2.h>
-#include <windows.h>
-#include <stdio.h>
-#include <tchar.h>
-
-#include <opencv2\highgui\highgui.hpp>
-#include <opencv2\opencv.hpp>
+//#include <winsock2.h>
+//#include <windows.h>
+//#include <stdio.h>
+//#include <tchar.h>
+//
+//#include <opencv2\highgui\highgui.hpp>
+//#include <opencv2\opencv.hpp>
 
 #define ACS_PORT		12000
 #define ACS_DELAY		1000
@@ -30,8 +30,8 @@ typedef struct oRegistration {
 	char firstName[NAME_BUFSIZE];
 	char lastName[NAME_BUFSIZE];
 	char Address[ADDRESS_BUFSIZE];
-	sockaddr_in sockaddr;
-	int sockaddrSize = sizeof(sockaddr_in);
+	/*sockaddr_in sockaddr;
+	int sockaddrSize = sizeof(sockaddr_in);*/
 }TRegistration;
 
 typedef struct oLogin {

@@ -1,3 +1,7 @@
+#include <winsock2.h>
+#include <windows.h>
+#include <stdio.h>
+#include <tchar.h>
 #include "definition.h"
 #include < iostream >
 #include <new>

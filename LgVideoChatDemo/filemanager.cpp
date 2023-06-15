@@ -2,6 +2,7 @@
 
 #include "json/json.h"
 #include <fstream>
+#include <iostream>
 
 #define DATA_FILE_NAME "data.dat"
 

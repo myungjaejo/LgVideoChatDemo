@@ -4,11 +4,14 @@
 #include <Commctrl.h>
 #include <atlstr.h>
 #include <iphlpapi.h>
-#include "definition.h"
-
+#include <winsock2.h>
 #include <ws2tcpip.h>
 #include <io.h>
 #include <fcntl.h>
+#include <opencv2\highgui\highgui.hpp>
+#include <opencv2\opencv.hpp>
+#include <iostream>
+
 #include "VoipVoice.h"
 #include "LgVideoChatDemo.h"
 #include "VideoServer.h"
@@ -19,6 +22,7 @@
 #include "Login.h"
 #include "AccessControlClient.h"
 #include "AccessControlServer.h"
+#include "definition.h"
 
 
 

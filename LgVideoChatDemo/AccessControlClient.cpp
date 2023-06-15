@@ -1,6 +1,11 @@
-#include "definition.h"
+//#include "definition.h"
+#include <winsock2.h>
+#include <windows.h>
+#include <stdio.h>
+#include <tchar.h>
 #include <ws2tcpip.h>
 #include < cstdlib >
+#include <iostream>
 
 #include "AccessControlClient.h"
 #include "LgVideoChatDemo.h"
