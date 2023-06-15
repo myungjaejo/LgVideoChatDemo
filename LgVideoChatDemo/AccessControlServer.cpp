@@ -5,6 +5,8 @@
 
 #include "LgVideoChatDemo.h"
 #include "TcpSendRecv.h"
+#include "filemanager.h"
+#include "VideoServer.h"
 
 static HANDLE hACServerListenerEvent = INVALID_HANDLE_VALUE;
 static HANDLE hEndACServerEvent = INVALID_HANDLE_VALUE;
@@ -18,6 +20,8 @@ static SOCKET Accepter = INVALID_SOCKET;
 
 static DWORD ThreadACServerID;
 static int NumEvents;
+
+static TRegistration controlDevices[5];
 
 static void CleanUpACServer(void);
 static DWORD WINAPI ThreadACServer(LPVOID ivalue);
@@ -44,6 +48,7 @@ bool StopACServer(void)
 		hThreadACServer = INVALID_HANDLE_VALUE;
 	}
 	CleanUpACServer();
+
 	return true;
 }
 
@@ -122,7 +127,7 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 	}
 
 	InternetAddr.sin_family = AF_INET;
-	InternetAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	inet_pton(AF_INET, ACS_IP, &InternetAddr.sin_addr.s_addr);
 	InternetAddr.sin_port = htons(ACS_PORT);
 	std::cout << "bind ACServer event....." << std::endl;
 	if (bind(Listener, (PSOCKADDR)&InternetAddr, sizeof(InternetAddr)) == SOCKET_ERROR)
@@ -140,6 +145,9 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 	ghEvents[0] = hEndACServerEvent;
 	ghEvents[1] = hACServerListenerEvent;
 	NumEvents = 2;
+
+	// TODO : load register file 
+	
 
 	while (1)
 	{
@@ -322,35 +330,85 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 
 static int RecvHandler(SOCKET __InputSock, char* data, int datasize)
 {
-
-	TDeviceID *getMsg = (TDeviceID *)data;
+	oCommandOnly *getMsg = (oCommandOnly*) data;
 
 	switch(getMsg->MessageType)
 	{
 		case Registration:
-			break;
+		{
+			// Registration
+			TRegistration* regData = (TRegistration*)data;
+			// Store Data
 
+			// update IP info
+
+			break;
+		}
 		case Login:
-			break;
+		{
+			// Login
+			TLogin* LoginData = (TLogin*)data;
 
+			// compare stored data
+
+			// compare result
+			// if true : status update
+			// TStatusInfo *sinfo = (TStatusInfo *)std::malloc(sizeof(TStatusInfo));
+			// sinfo->MessageType = SendStatus
+			// sinfo->status = "<< connect status >>"
+			// sendto(Accepter, (char *)sinfo, sizeof(TStatusInfo), 0, 0, <<sockaddr>>, <<sockaddr_len>>);
+
+			// if false :
+
+			//testlogin();
+
+			break;
+		}
 		case RequestStatus:
+		{
 			break;
-
+		}
 		case SendStatus:
+		{
 			break;
+		}
 
 		case RequestContactList:
-			break;
+		{
+			// Load stored data
 
+			// send contact list
+			// TContactList *clist = (TContactList *)std::malloc(sizeof(TContactList));
+			// clist->MessageType = SendContactList
+			// for i in range(Sizeof stored clist)
+			//		(clist->DevID).append(stored_clist[i])
+			// sendto(Accepter, (char *)clist, sizeof(TContactList), 0, 0, <<sockaddr>>, <<sockaddr_len>>);
+
+			break;
+		}
 		case RequestCall:
+		{
+			TDeviceID* tmp = (TDeviceID*)data;
+			// char* dev_id = tmp->DevID;
+			// std::cout << dev_id << std::endl;
+			// Load stored IP_addres of Receiver 
+			// sendto(Accepter, (char*)tmp, sizeof(TDeviceID), 0, 0, << sockaddr_forward >> , << sockaddr_len >> );
 			break;
-
+		}
 		case AcceptCall:
+		{
+			TDeviceID* tmp = (TDeviceID*)data;
+			// char* dev_id = tmp->DevID;
+			// std::cout << dev_id << std::endl;
 			break;
-
+		}
 		case RejectCall:
+		{
+			TDeviceID* tmp = (TDeviceID*)data;
+			// char* dev_id = tmp->DevID;
+			// std::cout << dev_id << std::endl;
 			break;
-
+		}
 		default:
 			break;
 	}

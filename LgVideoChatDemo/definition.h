@@ -15,7 +15,7 @@
 #define NAME_BUFSIZE		128
 #define MAX_DEVSIZE			5
 
-typedef struct oRegisteration {
+typedef struct oRegistration {
 	unsigned char MessageType;
 	unsigned int EmailSize;
 	char email[EMAIL_BUFSIZE];
@@ -27,7 +27,7 @@ typedef struct oRegisteration {
 	char Address[ADDRESS_BUFSIZE];
 	sockaddr_in sockaddr;
 	int sockaddrSize = sizeof(sockaddr_in);
-}TRegisteration;
+}TRegistration;
 
 typedef struct oLogin {
 	unsigned char MessageType;
@@ -63,6 +63,8 @@ typedef enum {
 	RegistrationResponse,
 	Login,
 	LoginResponse,
+	Logout,
+	LogoutResponse,
 	RequestStatus,
 	SendStatus,
 	RequestContactList,
