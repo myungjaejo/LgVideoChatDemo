@@ -52,7 +52,7 @@ bool ReadFromFile(const char* filename, char* buffer, int len)
 */
 
 
-bool StoreData(const TRegisteration* data, size_t size)
+bool StoreData(const TRegistration* data, size_t size)
 {
     Json::Value root;
 
@@ -81,7 +81,7 @@ bool StoreData(const TRegisteration* data, size_t size)
 }
 
 
-bool LoadData(TRegisteration* data, size_t size)
+bool LoadData(TRegistration* data, size_t size)
 {
     std::ifstream fin(DATA_FILE_NAME);
 
@@ -130,7 +130,7 @@ bool LoadData(TRegisteration* data, size_t size)
 
 void test_filemanager()
 {
-    TRegisteration data[5];
+    TRegistration data[5];
     memset(data, 0, sizeof(data));
 
     strcpy_s(data[0].email, "user0@email.net");
@@ -170,7 +170,7 @@ void test_filemanager()
 
     StoreData(data, 5);
 
-    TRegisteration read_data[5];
+    TRegistration read_data[5];
     memset(read_data, 0, sizeof(read_data));
 
     LoadData(read_data, 5);
