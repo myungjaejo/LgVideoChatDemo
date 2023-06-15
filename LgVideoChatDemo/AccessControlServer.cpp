@@ -19,6 +19,8 @@ static SOCKET Accepter = INVALID_SOCKET;
 static DWORD ThreadACServerID;
 static int NumEvents;
 
+static TRegistration controlDevices[5];
+
 static void CleanUpACServer(void);
 static DWORD WINAPI ThreadACServer(LPVOID ivalue);
 
@@ -322,15 +324,33 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 
 static int RecvHandler(SOCKET __InputSock, char* data, int datasize)
 {
-
-	TDeviceID *getMsg = (TDeviceID *)data;
+	oCommandOnly *getMsg = (oCommandOnly*) data;
 
 	switch(getMsg->MessageType)
 	{
 		case Registration:
+			// Registration
+			TRegistration* regData = (TRegistration*) data;
+			// Store Data
+
+			// update IP info
+
 			break;
 
 		case Login:
+			// Login
+			TLogin* LoginData = (TLogin*)data;
+
+			// compare stored data
+
+			// compare result
+			// if true : status update
+			// TStatusInfo *sinfo = (TStatusInfo *)std::malloc(sizeof(TStatusInfo));
+			// sinfo->MessageType = SendStatus
+			// sinfo->status = "<< connect status >>"
+			// sendto(Accepter, (char *)sinfo, sizeof(TStatusInfo), 0, 0, <<sockaddr>>, <<sockaddr_len>>);
+
+			// if false :
 			break;
 
 		case RequestStatus:
@@ -340,15 +360,32 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize)
 			break;
 
 		case RequestContactList:
+			// Load stored data
+
+			// send contact list
+			// TContactList *clist = (TContactList *)std::malloc(sizeof(TContactList));
+			// clist->MessageType = SendContactList
+			// for i in range(Sizeof stored clist)
+			//		(clist->DevID).append(stored_clist[i])
+			// sendto(Accepter, (char *)clist, sizeof(TContactList), 0, 0, <<sockaddr>>, <<sockaddr_len>>);
+
 			break;
 
 		case RequestCall:
+			TDeviceID* tmp = (TDeviceID*) data;
+			char* dev_id = tmp->DevID;
+			// Load stored IP_addres of Receiver 
+			// sendto(Accepter, (char*)tmp, sizeof(TDeviceID), 0, 0, << sockaddr_forward >> , << sockaddr_len >> );
 			break;
 
 		case AcceptCall:
+			TDeviceID* tmp = (TDeviceID*) data;
+			char* dev_id = tmp->DevID;
 			break;
 
 		case RejectCall:
+			TDeviceID* tmp = (TDeviceID*) data;
+			char* dev_id = tmp->DevID;
 			break;
 
 		default:
