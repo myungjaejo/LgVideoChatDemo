@@ -1,6 +1,10 @@
 #include "Login.h"
 #include "Register.h"
 #include <iostream>
+#include <wincrypt.h>
+#include <tchar.h>
+#include <regex>
+
 #define BUTTON_LOGIN 300
 #define BUTTON_REGISTER 301
 #define BUTTON_FORGETPASSWD 302
@@ -9,6 +13,52 @@ const int maxEmailLength = 30;
 const int maxPasswdLength = 30;
 HWND hwndEmail, hwndPassword, hwndLogin, hwndRegister, hwndForgetPasswd;
 HWND hwndParent;
+
+bool ValidateEmailAddress(const TCHAR* email) {
+    std::basic_regex<TCHAR> pattern(_T(R"([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})"));
+
+    std::basic_string<TCHAR> emailString(email);
+    return std::regex_match(emailString, pattern);
+}
+
+void SHA256Hash(const TCHAR* input, size_t inputLength, char* output) {
+    HCRYPTPROV hProv = 0;
+    HCRYPTHASH hHash = 0;
+    BYTE hash[32];
+    DWORD hashLen = sizeof(hash);
+
+    if (!CryptAcquireContext(&hProv, nullptr, nullptr, PROV_RSA_AES, CRYPT_VERIFYCONTEXT)) {
+        std::cerr << "CryptAcquireContext Failed: " << GetLastError() << std::endl;
+        return;
+    }
+
+    if (!CryptCreateHash(hProv, CALG_SHA_256, 0, 0, &hHash)) {
+        std::cerr << "CryptCreateHash Failed: " << GetLastError() << std::endl;
+        CryptReleaseContext(hProv, 0);
+        return;
+    }
+
+    if (!CryptHashData(hHash, reinterpret_cast<const BYTE*>(input), static_cast<DWORD>(inputLength), 0)) {
+        std::cerr << "CryptHashData Failed: " << GetLastError() << std::endl;
+        CryptDestroyHash(hHash);
+        CryptReleaseContext(hProv, 0);
+        return;
+    }
+
+    if (!CryptGetHashParam(hHash, HP_HASHVAL, hash, &hashLen, 0)) {
+        std::cerr << "CryptGetHashParam Failed: " << GetLastError() << std::endl;
+        CryptDestroyHash(hHash);
+        CryptReleaseContext(hProv, 0);
+        return;
+    }
+
+    for (DWORD i = 0; i < hashLen; i++) {
+        sprintf_s(output + i * 2, 3, "%02X", hash[i]);
+    }
+
+    CryptDestroyHash(hHash);
+    CryptReleaseContext(hProv, 0);
+}
 
 LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -26,7 +76,24 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     GetWindowText(hwndEmail, Email, maxEmailLength);
                     GetWindowText(hwndPassword, Passwd, maxPasswdLength);
                     printf("ID : %ls\nPASSWD : %ls\n", Email, Passwd);
-                    MessageBox(hwnd, TEXT("BUTTON_LOGIN"), TEXT("TEST"), MB_OK | MB_ICONEXCLAMATION);
+
+                    if (!ValidateEmailAddress(Email))
+                    {
+                        MessageBox(hwnd, TEXT("INVALID EMAIL FORMAT"), TEXT("ERROR"), MB_OK | MB_ICONEXCLAMATION);
+                        return 1;
+                    }
+
+                    if (_tcslen(Passwd) == 0)
+                    {
+                        MessageBox(hwnd, TEXT("INPUT PASSWORD"), TEXT("ERROR"), MB_OK | MB_ICONEXCLAMATION);
+                        return 1;
+                    }
+
+                    char PasswdHash[65];
+
+                    SHA256Hash(Email, _tcslen(Email), PasswdHash);
+                    std::cout << "SHA-256 : " << PasswdHash << std::endl;
+
                     break;
                 }
                 case BUTTON_REGISTER:
