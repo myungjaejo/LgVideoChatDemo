@@ -369,6 +369,7 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 			// Registration
 			TRegistration* regData = (TRegistration*)data;
 			// Store Data - memory / storage
+			std::cout << "get registration infomation" << std::endl;
 			if (RegistrationUserData(regData))
 			{
 				TCommandOnly* feedback = (TCommandOnly*)std::malloc(sizeof(TCommandOnly));
@@ -382,11 +383,13 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 				else
 				{
 					// TODO : ERROR
+					std::cout << "memory error - malloc" << std::endl;
 				}
 			}
 			else
 			{
 				//TODO :: ERROR
+				std::cout << "Full data error" << std::endl;
 			}
 
 			//StoreData()
