@@ -366,6 +366,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 StopACServer();
                 break;
             case IDM_LOGIN:
+                StartACServer(Loopback);
                 OnConnectACS(hWnd, message, wParam, lParam);
                 LoginCreateForm(hWnd);
                 break;

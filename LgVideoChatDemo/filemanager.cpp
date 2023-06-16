@@ -228,6 +228,9 @@ int getLengthJSON(void)
 {
     std::ifstream fin(DATA_FILE_NAME);
 
+    if (!fin)
+        return 0;
+
     Json::Value root;
     fin >> root; //여기서의 >> 연산
 

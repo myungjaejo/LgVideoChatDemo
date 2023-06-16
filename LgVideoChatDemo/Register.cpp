@@ -4,7 +4,8 @@
 #include <tchar.h>
 #include <cstring>
 #include "AccessControlClient.h"
-
+#include "Login.h"
+extern void SHA256Hash(const TCHAR* input, size_t inputLength, char* output);
 
 #define BUTTON_JOINUS 400
 const int maxLength = 255;
@@ -81,7 +82,17 @@ LRESULT CALLBACK RegisterProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 {
                     msg->MessageType = Registration;
                     msg->EmailSize = exchangeTCHARToChar(Email, msg->email);
-                    msg->PasswordSize = exchangeTCHARToChar(Passwd, msg->password);
+
+                    memset(msg->password, 0, 256);
+
+                    char PasswdHash[65];
+
+                    SHA256Hash(Passwd, _tcslen(Passwd), PasswdHash);
+                    std::cout << "SHA-256 : " << PasswdHash << std::endl;
+
+                    msg->PasswordSize = 64;
+                    memcpy(msg->password, PasswdHash, 64);
+
                     exchangeTCHARToChar(ContactID, msg->ContactID);
                     exchangeTCHARToChar(FirstName, msg->firstName);
                     exchangeTCHARToChar(LastName, msg->lastName);
@@ -104,7 +115,7 @@ LRESULT CALLBACK RegisterProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     }
     case WM_DESTROY:
     {
-        PostQuitMessage(0);
+        DestroyWindow(hwnd);
         return 0;
     }
     case WM_CLOSE:

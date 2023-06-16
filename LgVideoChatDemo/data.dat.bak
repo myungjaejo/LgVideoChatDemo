@@ -1,0 +1,26 @@
+[
+	{
+		"address" : "123123",
+		"contactID" : "aabb",
+		"email" : "hyoill.leem@lginnotek.com",
+		"firstName" : "Leem",
+		"lastName" : "hyoill",
+		"password" : "B33A2F448E942DDB6CBE69EAC6EB32E912EDDD812EBFDDC823DBB8CACD93D3A8"
+	},
+	{
+		"address" : "",
+		"contactID" : "aabb",
+		"email" : "aaa@aaa.com",
+		"firstName" : "",
+		"lastName" : "",
+		"password" : "1AB218F6A8C4121BE86FD8B82152B0C6123A9352E81E2CE563C208FE7E68CC2B\u034d\u034d\u034d\u034d\u034d\u034d\u034d\u034d\u034d\u034d\u034d\u034d\u034d\u034d\u034d\u034d\u034d\u034d\u034d\u034d\u034d\u034d\u034d\u034d\u034d\u034d\u034d\u034d\u034d\u034d\u034d\u034d"
+	},
+	{
+		"address" : "",
+		"contactID" : "bb",
+		"email" : "bbb@bbb.com",
+		"firstName" : "",
+		"lastName" : "",
+		"password" : "6AB4108F22B149EAAACDDF09493B585B95865A13B97A14EB4488A35249051F2A"
+	}
+]

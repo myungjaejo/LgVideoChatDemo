@@ -404,6 +404,13 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 			TLogin* LoginData = (TLogin*)data;
 			
 			std::cout << "email :" << LoginData->email << ", pwhash : " << LoginData->passwordHash << std::endl;
+
+			std::vector<TRegistration*>::iterator iter;
+			for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
+			{
+				// need to implement compare email and pwhash !!
+			}
+
 			// compare stored data
 
 			// compare result

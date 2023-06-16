@@ -18,7 +18,7 @@ const int maxPasswdLength = 30;
 HWND hwndEmail, hwndPassword, hwndLogin, hwndRegister, hwndForgetPasswd;
 HWND hwndParent;
 
-bool IsLogin = true;
+bool IsLogin = false;
 
 extern HINSTANCE hInst;
 
@@ -146,7 +146,7 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     CopyTCharToChar(Email, login.email, login.EmailSize);
                     memcpy(login.passwordHash, PasswdHash, 64);
                     // MessageBox(hwnd, TEXT("BUTTON_LOGIN"), TEXT("TEST"), MB_OK | MB_ICONEXCLAMATION);
-                    //sendMsgtoACS((char*) &login, sizeof(login));
+                    sendMsgtoACS((char*) &login, sizeof(login));
 
                     break;
                 }
