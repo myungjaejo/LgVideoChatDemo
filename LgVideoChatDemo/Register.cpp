@@ -9,7 +9,7 @@
 #define BUTTON_JOINUS 400
 const int maxLength = 255;
 
-HWND hwndRegisterEmail, hwndRegisterPassword, hwndRegisterConfirmPassword, hwndRegisterFirstName, hwndRegisterLastName, hwndRegisterAddress, hwndJoinUs;
+HWND hwndRegisterEmail, hwndRegisterPassword, hwndRegisterConfirmPassword, hwndRegisterFirstName, hwndRegisterLastName, hwndRegisterAddress, hwndRegisterCID, hwndJoinUs;
 
 bool checkPasswordRule(HWND hwnd, TCHAR* Passwd, unsigned int maxLength);
 bool checkConfirmPasswd(HWND hwnd, const TCHAR* passwd, size_t passwdSize, TCHAR* confirmPasswd, size_t confirmPasswdSize);
@@ -53,6 +53,8 @@ LRESULT CALLBACK RegisterProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 TCHAR FirstName[maxLength] = TEXT("");
                 TCHAR LastName[maxLength] = TEXT("");
                 TCHAR Address[maxLength] = TEXT("");
+                TCHAR ContactID[maxLength] = TEXT("");
+
 
                 GetWindowText(hwndRegisterEmail, Email, maxLength);
                 GetWindowText(hwndRegisterPassword, Passwd, maxLength);
@@ -60,6 +62,7 @@ LRESULT CALLBACK RegisterProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 GetWindowText(hwndRegisterFirstName, FirstName, maxLength);
                 GetWindowText(hwndRegisterLastName, LastName, maxLength);
                 GetWindowText(hwndRegisterAddress, Address, maxLength);
+                GetWindowText(hwndRegisterCID, ContactID, maxLength);
 
                 /* empty field */
                 if (checkEmptyField(hwnd, TEXT("email"), Email, sizeof(Email)) == false) break;
@@ -76,12 +79,13 @@ LRESULT CALLBACK RegisterProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 TRegistration* msg = (TRegistration *)std::malloc(sizeof(TRegistration));
                 if (msg != NULL)
                 {
+                    msg->MessageType = Registration;
                     msg->EmailSize = exchangeTCHARToChar(Email, msg->email);
                     msg->PasswordSize = exchangeTCHARToChar(Passwd, msg->password);
-                    exchangeTCHARToChar(Passwd, msg->ContactID);
-                    exchangeTCHARToChar(Passwd, msg->firstName);
-                    exchangeTCHARToChar(Passwd, msg->lastName);
-                    exchangeTCHARToChar(Passwd, msg->Address);
+                    exchangeTCHARToChar(ContactID, msg->ContactID);
+                    exchangeTCHARToChar(FirstName, msg->firstName);
+                    exchangeTCHARToChar(LastName, msg->lastName);
+                    exchangeTCHARToChar(Address, msg->Address);
 
                     sendMsgtoACS((char *)msg, sizeof(TRegistration));
                     free(msg);
@@ -186,7 +190,7 @@ void RegisterCreateForm(HWND parentHwnd)
         L"RegisterWindowClass",
         L"Register",
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
-        CW_USEDEFAULT, CW_USEDEFAULT, 350, 500,
+        CW_USEDEFAULT, CW_USEDEFAULT, 350, 560,
         parentHwnd, NULL, wc.hInstance, NULL
     );
 
@@ -298,12 +302,30 @@ void RegisterCreateForm(HWND parentHwnd)
         hwnd, NULL, NULL, NULL
     );
 
+    HWND hwndRegisterCIDLabel = CreateWindowEx(
+        0,
+        L"STATIC",
+        L"ContactID",
+        WS_VISIBLE | WS_CHILD,
+        20, 380, 300, 20,
+        hwnd, NULL, NULL, NULL
+    );
+
+    hwndRegisterCID = CreateWindowEx(
+        WS_EX_CLIENTEDGE,
+        L"EDIT",
+        L"",
+        WS_VISIBLE | WS_CHILD | ES_AUTOHSCROLL,
+        20, 410, 300, 20,
+        hwnd, NULL, NULL, NULL
+    );
+
     hwndJoinUs = CreateWindowEx(
         0,
         L"BUTTON",
         L"Join Us",
         WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-        20, 380, 300, 30,
+        20, 440, 300, 30,
         hwnd, (HMENU)BUTTON_JOINUS, NULL, NULL
     );
     // Show the main window

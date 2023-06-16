@@ -111,7 +111,7 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     CopyTCharToChar(Email, login.email, login.EmailSize);
                     memcpy(login.passwordHash, PasswdHash, 64);
                     // MessageBox(hwnd, TEXT("BUTTON_LOGIN"), TEXT("TEST"), MB_OK | MB_ICONEXCLAMATION);
-                    OnConnectACS(hwnd, msg, wParam, lParam);
+                    //OnConnectACS(hwnd, msg, wParam, lParam);
                     break;
                 }
                 case BUTTON_REGISTER:
