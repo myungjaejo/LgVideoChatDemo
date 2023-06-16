@@ -23,6 +23,7 @@
 #include "AccessControlClient.h"
 #include "AccessControlServer.h"
 #include "definition.h"
+#include "ContactList.h"
 
 
 
@@ -50,6 +51,7 @@
 #define IDC_CHECKBOX_AEC       1020 
 #define IDC_CHECKBOX_NS        1021
 #define IDM_LOGIN              1022
+#define IDM_CONTACTLIST        1023
 // Global Variables:
 
 HWND hWndMain;
@@ -115,6 +117,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         InstanceGuid.Data1, InstanceGuid.Data2, InstanceGuid.Data3,
         InstanceGuid.Data4[0], InstanceGuid.Data4[1], InstanceGuid.Data4[2], InstanceGuid.Data4[3],
         InstanceGuid.Data4[4], InstanceGuid.Data4[5], InstanceGuid.Data4[6], InstanceGuid.Data4[7]);
+
+    //CreateContactList();
 
     // Initialize global strings
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
@@ -364,6 +368,10 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             case IDM_LOGIN:
                 OnConnectACS(hWnd, message, wParam, lParam);
                 LoginCreateForm(hWnd);
+                break;
+            case IDM_CONTACTLIST:
+                CreateContactList(hWnd);
+                break;
             default:
                 return DefWindowProc(hWnd, message, wParam, lParam);
             }
@@ -462,7 +470,7 @@ HWND CreateSimpleToolbar(HWND hWndParent)
 {
     // Declare and initialize local constants.
     const int ImageListID = 0;
-    const int numButtons = 5;
+    const int numButtons = 2;
     const int bitmapSize = 16;
 
     const DWORD buttonStyles = BTNS_AUTOSIZE;
@@ -496,11 +504,14 @@ HWND CreateSimpleToolbar(HWND hWndParent)
 
     TBBUTTON tbButtons[numButtons] =
     {
+#if 0
         { MAKELONG(VIEW_NETCONNECT,    ImageListID), IDM_CONNECT,     TBSTATE_ENABLED,       buttonStyles, {0}, 0, (INT_PTR)L"Connect" },
         { MAKELONG(VIEW_NETDISCONNECT, ImageListID), IDM_DISCONNECT,  TBSTATE_INDETERMINATE, buttonStyles, {0}, 0, (INT_PTR)L"Disconnect"},
         { MAKELONG(VIEW_NETCONNECT,    ImageListID), IDM_START_SERVER,TBSTATE_ENABLED,       buttonStyles, {0}, 0, (INT_PTR)L"Start Server"},
         { MAKELONG(VIEW_NETDISCONNECT, ImageListID), IDM_STOP_SERVER, TBSTATE_INDETERMINATE, buttonStyles, {0}, 0, (INT_PTR)L"Stop Server"},
-        { MAKELONG(VIEW_NETCONNECT,    ImageListID), IDM_LOGIN ,      TBSTATE_ENABLED,       buttonStyles, {0}, 0, (INT_PTR)L"login"}
+#endif
+        { MAKELONG(VIEW_NETCONNECT,    ImageListID), IDM_LOGIN,       TBSTATE_ENABLED,       buttonStyles, {0}, 0, (INT_PTR)L"login"},
+        { MAKELONG(VIEW_NETCONNECT,    ImageListID), IDM_CONTACTLIST, TBSTATE_ENABLED,       buttonStyles, {0}, 0, (INT_PTR)L"Contact List"},
     };
 
     // Add buttons.

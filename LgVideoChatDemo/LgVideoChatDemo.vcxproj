@@ -133,6 +133,7 @@
     <ClInclude Include="AccessControlServer.h" />
     <ClInclude Include="AecKsBinder.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="ContactList.h" />
     <ClInclude Include="definition.h" />
     <ClInclude Include="DisplayImage.h" />
     <ClInclude Include="filemanager.h" />
@@ -159,6 +160,7 @@
     <ClCompile Include="AccessControlServer.cpp" />
     <ClCompile Include="AecKsBinder.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="ContactList.cpp" />
     <ClCompile Include="DisplayImage.cpp" />
     <ClCompile Include="filemanager.cpp" />
     <ClCompile Include="jsoncpp.cpp" />
