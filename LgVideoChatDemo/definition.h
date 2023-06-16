@@ -71,7 +71,7 @@ typedef struct oRspWithMessage {
 }TRspWithMessage;
 
 typedef enum {
-	Registration,
+	Registration = 0x41,
 	RegistrationResponse,
 	Login,
 	LoginResponse,

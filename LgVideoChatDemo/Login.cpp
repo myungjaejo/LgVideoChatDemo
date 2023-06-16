@@ -6,6 +6,8 @@
 #include <regex>
 #include "definition.h"
 #include "AccessControlClient.h"
+#include "AccessControlServer.h"
+#include "ContactList.h"
 
 #define BUTTON_LOGIN 300
 #define BUTTON_REGISTER 301
@@ -15,6 +17,33 @@ const int maxEmailLength = 30;
 const int maxPasswdLength = 30;
 HWND hwndEmail, hwndPassword, hwndLogin, hwndRegister, hwndForgetPasswd;
 HWND hwndParent;
+
+bool IsLogin = true;
+
+extern HINSTANCE hInst;
+
+bool HasConsecutiveCharacters(const TCHAR* password) {
+    const int consecutiveLimit = 3;
+    size_t length = _tcslen(password);
+
+    for (size_t i = 0; i < length - consecutiveLimit + 1; i++) {
+        bool isConsecutive = true;
+        TCHAR currentChar = password[i];
+
+        for (int j = 1; j < consecutiveLimit; j++) {
+            if (password[i + j] != currentChar + j) {
+                isConsecutive = false;
+                break;
+            }
+        }
+
+        if (isConsecutive) {
+            return true;
+        }
+    }
+
+    return false;
+}
 
 bool ValidateEmailAddress(const TCHAR* email) {
     std::basic_regex<TCHAR> pattern(_T(R"([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})"));
@@ -99,6 +128,12 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                         return 1;
                     }
 
+                    if (HasConsecutiveCharacters(Passwd))
+                    {
+                        MessageBox(hwnd, TEXT("NOT USE CONSECUTIVE CHAR FOR PASSWORD"), TEXT("ERROR"), MB_OK | MB_ICONEXCLAMATION);
+                        return 1;
+                    }
+
                     char PasswdHash[65];
 
                     SHA256Hash(Passwd, _tcslen(Passwd), PasswdHash);
@@ -111,7 +146,8 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     CopyTCharToChar(Email, login.email, login.EmailSize);
                     memcpy(login.passwordHash, PasswdHash, 64);
                     // MessageBox(hwnd, TEXT("BUTTON_LOGIN"), TEXT("TEST"), MB_OK | MB_ICONEXCLAMATION);
-                    OnConnectACS(hwnd, msg, wParam, lParam);
+                    //sendMsgtoACS((char*) &login, sizeof(login));
+
                     break;
                 }
                 case BUTTON_REGISTER:
@@ -123,7 +159,6 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 case BUTTON_FORGETPASSWD:
                 {
                     MessageBox(hwnd, TEXT("BUTTON_FORGETPASSWD"), TEXT("TEST"), MB_OK | MB_ICONEXCLAMATION);
-                    OnDisconnectACS(hwnd, msg, wParam, lParam);
                     break;
                 }
                 default:
@@ -133,24 +168,27 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         }
         case WM_DESTROY:
         {
-            PostQuitMessage(0);
+            DestroyWindow(hwnd);
+            //PostQuitMessage(0);
             return 0;
         }
         case WM_CLOSE: 
         {
+            //PostQuitMessage(0);
             DestroyWindow(hwnd);
             return 0;
         }
         default:
             return DefWindowProc(hwnd, msg, wParam, lParam);
     }
+    return 0;
 }
 
 
 void LoginCreateForm(HWND parentHwnd)
 {
     hwndParent = parentHwnd;
-    WNDCLASS wc = {};
+    WNDCLASS wc = { 0 };
     wc.lpfnWndProc = LoginProc;
     wc.hInstance = GetModuleHandle(NULL);
     wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
