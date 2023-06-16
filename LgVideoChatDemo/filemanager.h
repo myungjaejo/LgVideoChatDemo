@@ -1,7 +1,12 @@
 #pragma once
 
 #include "definition.h"
-bool StoreData(const TRegistration* data, size_t size);
-bool LoadData(TRegistration* data, size_t size);
+#include <vector>
 
-void test_filemanager();
+bool StoreData(const TRegistration* data, size_t size);
+bool StoreData(std::vector<TRegistration*> data);
+bool LoadData(TRegistration* data, int idx);
+int getLengthJSON(void);
+void printFileObj(const TRegistration* data);
+
+// void test_filemanager();

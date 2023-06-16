@@ -6,6 +6,8 @@
 #include < iostream >
 #include <new>
 #include "AccessControlServer.h"
+#include <vector>
+
 
 #include "LgVideoChatDemo.h"
 #include "TcpSendRecv.h"
@@ -26,10 +28,11 @@ static SOCKET Accepter = INVALID_SOCKET;
 static DWORD ThreadACServerID;
 static int NumEvents;
 
-static TRegistration controlDevices[5];
+static std::vector<TRegistration *> controlDevices;
 
 static void CleanUpACServer(void);
 static DWORD WINAPI ThreadACServer(LPVOID ivalue);
+static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in sockip, int socklen);
 
 // start Server
 bool StartACServer(bool& Loopback)
@@ -151,8 +154,29 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 	ghEvents[1] = hACServerListenerEvent;
 	NumEvents = 2;
 
-	// TODO : load register file 
-	
+	// TODO : load register file
+	int len_stored = getLengthJSON();
+	std::cout << "JSON file obj size : " << len_stored << std::endl;
+	for (int i = 0; i < len_stored; i++)
+	{
+		TRegistration* tmp = (TRegistration*)std::malloc(sizeof(TRegistration));
+		if (tmp != NULL)
+		{
+			LoadData(tmp, i);
+			controlDevices.push_back(tmp);
+		}
+		else
+		{
+			std::cout << "Memory is not stable - malloc error" << std::endl;
+			exit(-1);
+		}
+	}
+
+	std::vector<TRegistration*>::iterator iter;
+	for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
+	{
+		printFileObj(*iter);
+	}
 
 	while (1)
 	{
@@ -273,8 +297,8 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 
 						if ((result = recvfrom(Accepter, testText, sizeof(testText), 0, (sockaddr *)&saFrom, &nFromLen)) != SOCKET_ERROR)
 						{
-							std::cout << "Received : " << testText << std::endl;
-
+							//std::cout << "Received : " << testText << std::endl;
+							RecvHandler(Accepter, testText, result, saFrom, nFromLen);
 							
 						}
 						else 
@@ -333,7 +357,7 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 }
 
 
-static int RecvHandler(SOCKET __InputSock, char* data, int datasize)
+static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in sockip, int socklen )
 {
 	oCommandOnly *getMsg = (oCommandOnly*) data;
 
@@ -343,7 +367,10 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize)
 		{
 			// Registration
 			TRegistration* regData = (TRegistration*)data;
-			// Store Data
+			// Store Data - memory / storage
+			
+
+			//StoreData()
 
 			// update IP info
 
@@ -353,7 +380,8 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize)
 		{
 			// Login
 			TLogin* LoginData = (TLogin*)data;
-
+			
+			std::cout << "email :" << LoginData->email << ", pwhash : " << LoginData->passwordHash << std::endl;
 			// compare stored data
 
 			// compare result
@@ -417,4 +445,53 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize)
 		default:
 			break;
 	}
+	return 0;
+}
+
+
+bool RegistrationToMem(TRegistration* data)
+{
+	int len = controlDevices.size();
+	if (len < MAX_DEVSIZE )
+	{
+		TRegistration* input = (TRegistration*)std::malloc(sizeof(TRegistration));
+		if (input != NULL)
+		{
+			memcpy(input, data, sizeof(TRegistration));
+			controlDevices.push_back(input);
+			return true;
+		}
+		else
+		{
+			std::cout << "memory error - malloc" << std::endl;
+			return false;
+		}
+	}
+	else
+	{
+		std::cout << "isFull regist memory" << std::endl;
+		return false;
+	}
+}
+
+bool RegistrationToFile(void)
+{
+	int len = controlDevices.size();
+	if (len < (MAX_DEVSIZE+1) )
+	{
+		StoreData(controlDevices);
+		return true;
+	}
+	else
+	{
+		std::cout << "isFull regist memory" << std::endl;
+		return false;
+	}
+}
+
+bool RegistrationUserData(TRegistration* data)
+{
+	if (!RegistrationToMem(data)) return false;
+	if (!RegistrationToFile()) return false;
+	return true;
 }

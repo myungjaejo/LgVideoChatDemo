@@ -253,7 +253,7 @@ static DWORD WINAPI ThreadACClient(LPVOID ivalue)
         {
             char testText[1000];
             memcpy(testText, "Test timer from client", 22);
-            if(send(Client, (char*)testText, sizeof(testText), 0))
+            if(sendMsgtoACS((char*)testText, sizeof(testText)))
             { 
                 std::cout << "send Test Text to AC Server" << std::endl;
             }

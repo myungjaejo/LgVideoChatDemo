@@ -1,7 +1,9 @@
 #include "Register.h"
+#include "definition.h"
 #include <iostream>
 #include <tchar.h>
 #include <cstring>
+#include "AccessControlClient.h"
 
 
 #define BUTTON_JOINUS 400
@@ -11,6 +13,15 @@ HWND hwndRegisterEmail, hwndRegisterPassword, hwndRegisterConfirmPassword, hwndR
 
 bool checkPasswordRule(HWND hwnd, TCHAR* Passwd, unsigned int maxLength);
 bool checkConfirmPasswd(HWND hwnd, const TCHAR* passwd, size_t passwdSize, TCHAR* confirmPasswd, size_t confirmPasswdSize);
+
+int exchangeTCHARToChar(TCHAR* target, char* outbuf)
+{
+    int nLength = WideCharToMultiByte(CP_ACP, 0, target, -1, NULL, 0, NULL, NULL);
+    WideCharToMultiByte(CP_ACP, 0, target, -1, outbuf, nLength, NULL, NULL);
+
+    return nLength;
+}
+
 
 bool checkEmptyField(HWND hwnd, const TCHAR* itemName, TCHAR* itemData, size_t itemDataSize )
 {
@@ -61,8 +72,25 @@ LRESULT CALLBACK RegisterProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 /* check confirm password */
                 if (checkConfirmPasswd(hwnd, Passwd, _tcslen(Passwd), ConfirmPasswd, _tcslen(ConfirmPasswd)) == false) break;
 
-                printf("ID : %ls\nPASSWD : %ls\nConfirmPasswd : %ls\nFirstName : %ls\nLastName : %ls\nAddress : %ls\n", Email, Passwd, ConfirmPasswd, FirstName, LastName, Address);
-                MessageBox(hwnd, TEXT("BUTTON_JOINUS"), TEXT("TEST"), MB_OK | MB_ICONEXCLAMATION);
+                // printf("ID : %ls\nPASSWD : %ls\nConfirmPasswd : %ls\nFirstName : %ls\nLastName : %ls\nAddress : %ls\n", Email, Passwd, ConfirmPasswd, FirstName, LastName, Address);
+                TRegistration* msg = (TRegistration *)std::malloc(sizeof(TRegistration));
+                if (msg != NULL)
+                {
+                    msg->EmailSize = exchangeTCHARToChar(Email, msg->email);
+                    msg->PasswordSize = exchangeTCHARToChar(Passwd, msg->password);
+                    exchangeTCHARToChar(Passwd, msg->ContactID);
+                    exchangeTCHARToChar(Passwd, msg->firstName);
+                    exchangeTCHARToChar(Passwd, msg->lastName);
+                    exchangeTCHARToChar(Passwd, msg->Address);
+
+                    sendMsgtoACS((char *)msg, sizeof(TRegistration));
+                    free(msg);
+                }
+                else
+                {
+                    std::cout << "exception for malloc error" << std::endl;
+                }
+                
                 break;
             }
             default:
