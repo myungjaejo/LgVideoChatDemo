@@ -33,6 +33,7 @@ static std::vector<TRegistration *> controlDevices;
 static void CleanUpACServer(void);
 static DWORD WINAPI ThreadACServer(LPVOID ivalue);
 static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in sockip, int socklen);
+bool RegistrationUserData(TRegistration* data);
 
 // start Server
 bool StartACServer(bool& Loopback)
@@ -368,7 +369,25 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 			// Registration
 			TRegistration* regData = (TRegistration*)data;
 			// Store Data - memory / storage
-			
+			if (RegistrationUserData(regData))
+			{
+				TCommandOnly* feedback = (TCommandOnly*)std::malloc(sizeof(TCommandOnly));
+				if (feedback != NULL)
+				{
+					feedback->MessageType = RegistrationResponse;
+					feedback->answer = true;
+					sendto(__InputSock, (char *)feedback, sizeof(TCommandOnly), 0, (sockaddr*)&sockip, socklen);
+					free(feedback);
+				}
+				else
+				{
+					// TODO : ERROR
+				}
+			}
+			else
+			{
+				//TODO :: ERROR
+			}
 
 			//StoreData()
 

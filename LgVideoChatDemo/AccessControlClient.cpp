@@ -21,6 +21,7 @@ static SOCKET Client = INVALID_SOCKET;
 static DWORD ThreadACClientID;
 
 static DWORD WINAPI ThreadACClient(LPVOID ivalue);
+static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in sockip, int socklen);
 
 static void AccessControlClientSetExitEvent(void)
 {
@@ -181,7 +182,7 @@ static DWORD WINAPI ThreadACClient(LPVOID ivalue)
     ghEvents[1] = hClientEvent;
     ghEvents[2] = hTimer;
     
-    NumEvents = 3;
+    NumEvents = 2;
 
     while (1) {
         dwEvent = WaitForMultipleObjects(
@@ -211,10 +212,14 @@ static DWORD WINAPI ThreadACClient(LPVOID ivalue)
                     else
                     {
                         int iResult;
-                        iResult = recv(Client, (char*)InputBufferWithOffset, InputBytesNeeded, 0);
+                        sockaddr_in safrom;
+                        int socklen = sizeof(sockaddr_in);
+
+                        iResult = recvfrom(Client, (char*)InputBufferWithOffset, InputBytesNeeded, 0, (sockaddr*)&safrom, &socklen);
                         if (iResult != SOCKET_ERROR)
                         {
-                            std::cout << "AC client recevied : " << InputBufferWithOffset << std::endl;
+                            //std::cout << "AC client recevied : " << InputBufferWithOffset << std::endl;
+                            RecvHandler(Client, InputBufferWithOffset, InputBytesNeeded, safrom, socklen);
                         }
                         else 
                             std::cout << "ReadDataTcpNoBlock buff failed " << WSAGetLastError() << std::endl;
@@ -322,3 +327,77 @@ int OnDisconnectACS(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     }
     return 1;
 }
+
+
+static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in sockip, int socklen)
+{
+    oCommandOnly* getMsg = (oCommandOnly*)data;
+
+    switch (getMsg->MessageType)
+    {
+    case RegistrationResponse:
+    {
+        // Registration
+        std::cout << "registed User Information " << std::endl;
+
+        break;
+    }
+    case LoginResponse:
+    {
+        break;
+    }
+    case LogoutResponse:
+    {
+        break;
+    }
+    case RequestStatus:
+    {
+        break;
+    }
+    case SendStatus:
+    {
+        break;
+    }
+
+    case RequestContactList:
+    {
+        // Load stored data
+
+        // send contact list
+        // TContactList *clist = (TContactList *)std::malloc(sizeof(TContactList));
+        // clist->MessageType = SendContactList
+        // for i in range(Sizeof stored clist)
+        //		(clist->DevID).append(stored_clist[i])
+        // sendto(Accepter, (char *)clist, sizeof(TContactList), 0, 0, <<sockaddr>>, <<sockaddr_len>>);
+
+        break;
+    }
+    case RequestCall:
+    {
+        TDeviceID* tmp = (TDeviceID*)data;
+        // char* dev_id = tmp->DevID;
+        // std::cout << dev_id << std::endl;
+        // Load stored IP_addres of Receiver 
+        // sendto(Accepter, (char*)tmp, sizeof(TDeviceID), 0, 0, << sockaddr_forward >> , << sockaddr_len >> );
+        break;
+    }
+    case AcceptCall:
+    {
+        TDeviceID* tmp = (TDeviceID*)data;
+        // char* dev_id = tmp->DevID;
+        // std::cout << dev_id << std::endl;
+        break;
+    }
+    case RejectCall:
+    {
+        TDeviceID* tmp = (TDeviceID*)data;
+        // char* dev_id = tmp->DevID;
+        // std::cout << dev_id << std::endl;
+        break;
+    }
+    default:
+        break;
+    }
+    return 0;
+}
+
