@@ -418,9 +418,9 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 						resp = Connected;
 					}
 				}
-				sendStatusMsg(__InputSock, sockip, socklen, resp);
 			}
-
+			std::cout << "send login response " << resp << std::endl;
+			sendStatusMsg(__InputSock, sockip, socklen, resp);
 			// compare stored data
 
 			// compare result
@@ -555,7 +555,7 @@ bool sendStatusMsg(SOCKET __InputSock, sockaddr_in sockip, int socklen, TStatus 
 	TStatusInfo* feedback = (TStatusInfo*)std::malloc(sizeof(TStatusInfo));
 	if (feedback != NULL)
 	{
-		feedback->MessageType = RegistrationResponse;
+		feedback->MessageType =LoginResponse;
 		feedback->status = status;
 		sendto(__InputSock, (char*)feedback, sizeof(TStatusInfo), 0, (sockaddr*)&sockip, socklen);
 		free(feedback);

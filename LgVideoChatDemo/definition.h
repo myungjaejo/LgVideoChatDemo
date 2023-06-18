@@ -55,7 +55,7 @@ typedef struct oDeviceID {
 
 typedef struct oStatusInfo {
 	unsigned char MessageType;
-	unsigned int status;
+	unsigned char status;
 }TStatusInfo;
 
 typedef struct oCommandOnly {
