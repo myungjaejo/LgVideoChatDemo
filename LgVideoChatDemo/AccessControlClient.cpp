@@ -6,11 +6,12 @@
 #include <ws2tcpip.h>
 #include < cstdlib >
 #include <iostream>
+#include <Commctrl.h>
 
 #include "AccessControlClient.h"
 #include "LgVideoChatDemo.h"
 #include "TcpSendRecv.h"
-#include "definition.h"
+//#include "definition.h"
 
 static HANDLE hClientEvent = INVALID_HANDLE_VALUE;
 static HANDLE hEndACClientEvent = INVALID_HANDLE_VALUE;
@@ -344,6 +345,19 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
     }
     case LoginResponse:
     {
+        TStatusInfo* sMsg = (TStatusInfo*)data;
+        if (sMsg->status == Connected)
+        {
+            devStatus = Connected;
+            SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CONNECT,
+                (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
+            std::cout << "Lonin Success " << std::endl;
+        }
+        else
+        {
+            std::cout << "Lonin Failed " << std::endl;
+        }
+
         break;
     }
     case LogoutResponse:

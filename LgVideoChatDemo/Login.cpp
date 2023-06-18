@@ -4,7 +4,9 @@
 #include <wincrypt.h>
 #include <tchar.h>
 #include <regex>
-#include "definition.h"
+#include <Commctrl.h>
+//#include "definition.h"
+#include "LgVideoChatDemo.h"
 #include "AccessControlClient.h"
 #include "AccessControlServer.h"
 #include "ContactList.h"
@@ -21,6 +23,18 @@ HWND hwndParent;
 bool IsLogin = false;
 
 extern HINSTANCE hInst;
+
+bool isAdmin(const TCHAR* Email, const TCHAR* Passwd)
+{
+    if (!_tcscmp(Email, TEXT("admin")))
+    {
+        if (!_tcscmp(Passwd, TEXT("admin123")))
+        {
+            return true;
+        }
+    }
+    return false;
+}
 
 bool HasConsecutiveCharacters(const TCHAR* password) {
     const int consecutiveLimit = 3;
@@ -116,6 +130,14 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     GetWindowText(hwndPassword, Passwd, maxPasswdLength);
                     printf("ID : %ls\nPASSWD : %ls\n", Email, Passwd);
 
+                    if (isAdmin(Email, Passwd))
+                    {
+                        devStatus = Server;
+                        SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_START_SERVER,
+                            (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
+                        return 1;
+                    }
+
                     if (!ValidateEmailAddress(Email))
                     {
                         MessageBox(hwnd, TEXT("INVALID EMAIL FORMAT"), TEXT("ERROR"), MB_OK | MB_ICONEXCLAMATION);
@@ -161,6 +183,7 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     MessageBox(hwnd, TEXT("BUTTON_FORGETPASSWD"), TEXT("TEST"), MB_OK | MB_ICONEXCLAMATION);
                     break;
                 }
+
                 default:
                     break;
             }
@@ -201,7 +224,7 @@ void LoginCreateForm(HWND parentHwnd)
         L"Login",
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
         CW_USEDEFAULT, CW_USEDEFAULT, 350, 200,
-        NULL, NULL, wc.hInstance, NULL
+        hwndParent, NULL, wc.hInstance, NULL
     );
 
     HWND hwndEmailLabel = CreateWindowEx(

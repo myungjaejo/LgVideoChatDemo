@@ -13,7 +13,7 @@
 #include "TcpSendRecv.h"
 #include "filemanager.h"
 #include "VideoServer.h"
-#include "definition.h"
+//#include "definition.h"
 
 static HANDLE hACServerListenerEvent = INVALID_HANDLE_VALUE;
 static HANDLE hEndACServerEvent = INVALID_HANDLE_VALUE;
@@ -34,6 +34,9 @@ static void CleanUpACServer(void);
 static DWORD WINAPI ThreadACServer(LPVOID ivalue);
 static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in sockip, int socklen);
 bool RegistrationUserData(TRegistration* data);
+bool sendCommandOnlyMsg(SOCKET __InputSock, sockaddr_in sockip, int socklen, bool answer);
+bool sendStatusMsg(SOCKET __InputSock, sockaddr_in sockip, int socklen, TStatus status);
+
 
 // start Server
 bool StartACServer(bool& Loopback)
@@ -373,12 +376,9 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 			if (RegistrationUserData(regData))
 			{
 				TCommandOnly* feedback = (TCommandOnly*)std::malloc(sizeof(TCommandOnly));
-				if (feedback != NULL)
+				if (sendCommandOnlyMsg(__InputSock, sockip, socklen, true) != NULL)
 				{
-					feedback->MessageType = RegistrationResponse;
-					feedback->answer = true;
-					sendto(__InputSock, (char *)feedback, sizeof(TCommandOnly), 0, (sockaddr*)&sockip, socklen);
-					free(feedback);
+
 				}
 				else
 				{
@@ -402,13 +402,23 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 		{
 			// Login
 			TLogin* LoginData = (TLogin*)data;
-			
+			TStatus resp = Disconnected;
 			std::cout << "email :" << LoginData->email << ", pwhash : " << LoginData->passwordHash << std::endl;
 
 			std::vector<TRegistration*>::iterator iter;
 			for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
 			{
 				// need to implement compare email and pwhash !!
+				TStatusInfo* feedback = (TStatusInfo*)std::malloc(sizeof(TStatusInfo));
+				
+				if (!strncmp((*iter)->email, LoginData->email, (*iter)->EmailSize))
+				{
+					if (!strncmp((*iter)->password, LoginData->passwordHash, (*iter)->PasswordSize))
+					{						
+						resp = Connected;
+					}
+				}
+				sendStatusMsg(__InputSock, sockip, socklen, resp);
 			}
 
 			// compare stored data
@@ -523,4 +533,33 @@ bool RegistrationUserData(TRegistration* data)
 	if (!RegistrationToMem(data)) return false;
 	if (!RegistrationToFile()) return false;
 	return true;
+}
+
+
+bool sendCommandOnlyMsg(SOCKET __InputSock, sockaddr_in sockip, int socklen, bool answer)
+{
+	TCommandOnly* feedback = (TCommandOnly*)std::malloc(sizeof(TCommandOnly));
+	if (feedback != NULL)
+	{
+		feedback->MessageType = RegistrationResponse;
+		feedback->answer = answer;
+		sendto(__InputSock, (char*)feedback, sizeof(TCommandOnly), 0, (sockaddr*)&sockip, socklen);
+		free(feedback);
+		return true;
+	}
+	return false;
+}
+
+bool sendStatusMsg(SOCKET __InputSock, sockaddr_in sockip, int socklen, TStatus status)
+{
+	TStatusInfo* feedback = (TStatusInfo*)std::malloc(sizeof(TStatusInfo));
+	if (feedback != NULL)
+	{
+		feedback->MessageType = RegistrationResponse;
+		feedback->status = status;
+		sendto(__InputSock, (char*)feedback, sizeof(TStatusInfo), 0, (sockaddr*)&sockip, socklen);
+		free(feedback);
+		return true;
+	}
+	return false;
 }

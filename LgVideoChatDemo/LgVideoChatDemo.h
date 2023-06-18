@@ -2,6 +2,7 @@
 
 #include "resource.h"
 #include "VoipVoice.h"
+#include "definition.h"
 
 #define WM_CLIENT_LOST         WM_USER+1
 #define WM_REMOTE_CONNECT      WM_USER+2
@@ -13,9 +14,16 @@
 #define VOIP_REMOTE_PORT 10001
 #define VIDEO_FRAME_DELAY 100
 
+#define IDM_CONNECT            1014
+#define IDM_DISCONNECT         1015
+#define IDM_START_SERVER       1016
+#define IDM_STOP_SERVER        1017
+
 extern HWND hWndMain;
 extern TVoipAttr VoipAttr;
 extern char LocalIpAddress[512];
+extern TStatus devStatus;
+extern HWND hWndMainToolbar;
 
 //-----------------------------------------------------------------
 // END of File

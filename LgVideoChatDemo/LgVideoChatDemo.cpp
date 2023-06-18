@@ -22,7 +22,7 @@
 #include "Login.h"
 #include "AccessControlClient.h"
 #include "AccessControlServer.h"
-#include "definition.h"
+//#include "definition.h"
 #include "ContactList.h"
 
 
@@ -42,18 +42,20 @@
 #define IDC_EDIT_REMOTE        1011
 #define IDC_CHECKBOX_LOOPBACK  1012 
 #define IDC_EDIT               1013 
-#define IDM_CONNECT            1014
-#define IDM_DISCONNECT         1015
-#define IDM_START_SERVER       1016
-#define IDM_STOP_SERVER        1017
+//#define IDM_CONNECT            1014
+//#define IDM_DISCONNECT         1015
+//#define IDM_START_SERVER       1016
+//#define IDM_STOP_SERVER        1017
 #define IDC_LABEL_VAD_STATE    1018
 #define IDC_VAD_STATE_STATUS   1019
 #define IDC_CHECKBOX_AEC       1020 
 #define IDC_CHECKBOX_NS        1021
 #define IDM_LOGIN              1022
 #define IDM_CONTACTLIST        1023
-// Global Variables:
 
+#define UI_FIVE                 true
+
+// Global Variables:
 HWND hWndMain;
 GUID InstanceGuid;
 char LocalIpAddress[512] = "127.0.0.1";
@@ -67,8 +69,10 @@ static char RemoteAddress[512]="127.0.0.1";
 static bool Loopback=false;
 
 static FILE* pCout = NULL;
-static HWND hWndMainToolbar;
+HWND hWndMainToolbar;
 static HWND hWndEdit;
+
+TStatus devStatus = Disconnected;
 
 // Forward declarations of functions included in this code module:
 static ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -366,7 +370,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 StopACServer();
                 break;
             case IDM_LOGIN:
-                StartACServer(Loopback);
+                // StartACServer(Loopback);
                 OnConnectACS(hWnd, message, wParam, lParam);
                 LoginCreateForm(hWnd);
                 break;
@@ -471,7 +475,7 @@ HWND CreateSimpleToolbar(HWND hWndParent)
 {
     // Declare and initialize local constants.
     const int ImageListID = 0;
-    const int numButtons = 2;
+    const int numButtons = (UI_FIVE? 5: 2);
     const int bitmapSize = 16;
 
     const DWORD buttonStyles = BTNS_AUTOSIZE;
@@ -505,14 +509,16 @@ HWND CreateSimpleToolbar(HWND hWndParent)
 
     TBBUTTON tbButtons[numButtons] =
     {
-#if 0
-        { MAKELONG(VIEW_NETCONNECT,    ImageListID), IDM_CONNECT,     TBSTATE_ENABLED,       buttonStyles, {0}, 0, (INT_PTR)L"Connect" },
+#if UI_FIVE
+        { MAKELONG(VIEW_NETCONNECT,    ImageListID), IDM_CONNECT,     TBSTATE_INDETERMINATE,       buttonStyles, {0}, 0, (INT_PTR)L"Connect" },
         { MAKELONG(VIEW_NETDISCONNECT, ImageListID), IDM_DISCONNECT,  TBSTATE_INDETERMINATE, buttonStyles, {0}, 0, (INT_PTR)L"Disconnect"},
-        { MAKELONG(VIEW_NETCONNECT,    ImageListID), IDM_START_SERVER,TBSTATE_ENABLED,       buttonStyles, {0}, 0, (INT_PTR)L"Start Server"},
+        { MAKELONG(VIEW_NETCONNECT,    ImageListID), IDM_START_SERVER,TBSTATE_INDETERMINATE,       buttonStyles, {0}, 0, (INT_PTR)L"Start Server"},
         { MAKELONG(VIEW_NETDISCONNECT, ImageListID), IDM_STOP_SERVER, TBSTATE_INDETERMINATE, buttonStyles, {0}, 0, (INT_PTR)L"Stop Server"},
-#endif
+        { MAKELONG(VIEW_NETCONNECT,    ImageListID), IDM_LOGIN,       TBSTATE_ENABLED,       buttonStyles, {0}, 0, (INT_PTR)L"login"},
+#else
         { MAKELONG(VIEW_NETCONNECT,    ImageListID), IDM_LOGIN,       TBSTATE_ENABLED,       buttonStyles, {0}, 0, (INT_PTR)L"login"},
         { MAKELONG(VIEW_NETCONNECT,    ImageListID), IDM_CONTACTLIST, TBSTATE_ENABLED,       buttonStyles, {0}, 0, (INT_PTR)L"Contact List"},
+#endif
     };
 
     // Add buttons.

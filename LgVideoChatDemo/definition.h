@@ -55,7 +55,7 @@ typedef struct oDeviceID {
 
 typedef struct oStatusInfo {
 	unsigned char MessageType;
-	unsigned char status;
+	unsigned int status;
 }TStatusInfo;
 
 typedef struct oCommandOnly {
@@ -85,3 +85,13 @@ typedef enum {
 	AcceptCall,
 	RejectCall
 }TNetworkCommand;
+
+
+typedef enum {
+	Disconnected,
+	Connected,
+	Caller,
+	Callee,
+	Calling,
+	Server = 31967
+}TStatus;

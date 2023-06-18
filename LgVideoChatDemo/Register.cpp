@@ -97,6 +97,7 @@ LRESULT CALLBACK RegisterProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     exchangeTCHARToChar(FirstName, msg->firstName);
                     exchangeTCHARToChar(LastName, msg->lastName);
                     exchangeTCHARToChar(Address, msg->Address);
+                    msg->EmailSize = _tcslen(Email);
 
                     sendMsgtoACS((char *)msg, sizeof(TRegistration));
                     free(msg);
