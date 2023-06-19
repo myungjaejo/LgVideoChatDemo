@@ -447,21 +447,38 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 
 		case RequestContactList:
 		{
-			TContactList* clist = (TContactList*)std::malloc(sizeof(TContactList));
-			clist->MessageType = SendContactList;
-			clist->ListSize = 0;
+			TContactList clist{};
+			clist.MessageType = SendContactList;
+			clist.ListSize = (char)0;
+			strcpy_s(clist.ListBuf, "");
 			// Load stored data
 			std::vector<TRegistration*>::iterator iter;
 			for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
-			{
-				strcat(clist->ListBuf, "/");
-				strcat(clist->ListBuf, (*iter)->ContactID);
-				clist->ListSize += 1;
+			{				
+				strcat_s(clist.ListBuf, (*iter)->ContactID);
+				strcat_s(clist.ListBuf, "/");
+				clist.ListSize += 1;
 			}
-			std::cout << "merge data : << " << clist->ListBuf << std::endl;
+			std::cout << "merge data : " << clist.ListBuf << std::endl;
 			// send contact list
-			sendto(__InputSock, (char*)clist, sizeof(TContactList), 0, (sockaddr*)&sockip, socklen);
-			free(clist);
+			sendto(__InputSock, (char*)&clist, sizeof(clist), 0, (sockaddr*)&sockip, socklen);
+			
+			//TContactList* clist = (TContactList*)std::malloc(sizeof(TContactList));
+			//clist->MessageType = SendContactList;
+			//clist->ListSize = 0;
+			//strcpy_s(clist->ListBuf, "");
+			//// Load stored data
+			//std::vector<TRegistration*>::iterator iter;
+			//for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
+			//{				
+			//	strcat_s(clist->ListBuf, (*iter)->ContactID);
+			//	strcat_s(clist->ListBuf, "/");
+			//	clist->ListSize += 1;
+			//}
+			//std::cout << "merge data : " << clist->ListBuf << std::endl;
+			//// send contact list
+			//sendto(__InputSock, (char*)clist, sizeof(TContactList), 0, (sockaddr*)&sockip, socklen);
+			//free(clist);
 
 			// for i in range(Sizeof stored clist)
 			//		(clist->DevID).append(stored_clist[i])

@@ -46,7 +46,7 @@ typedef struct oLogin {
 
 typedef struct oContactList {
 	unsigned char MessageType;
-	unsigned int ListSize;
+	unsigned char ListSize;
 	char ListBuf[PARSE_NAME_BUFSIZE];
 }TContactList;
 

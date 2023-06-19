@@ -140,7 +140,7 @@ static DWORD WINAPI ThreadACClient(LPVOID ivalue)
     char* InputBuffer = NULL;
     char* InputBufferWithOffset = NULL;
     unsigned int CurrentInputBufferSize = 1024 * 10;
-    unsigned int InputBytesNeeded = sizeof(unsigned int);
+    unsigned int InputBytesNeeded = 1024 * 10;
 
     InputBuffer = (char*)std::realloc(InputBuffer, CurrentInputBufferSize);
     InputBufferWithOffset = InputBuffer;
@@ -220,7 +220,7 @@ static DWORD WINAPI ThreadACClient(LPVOID ivalue)
                         if (iResult != SOCKET_ERROR)
                         {
                             //std::cout << "AC client recevied : " << InputBufferWithOffset << std::endl;
-                            RecvHandler(Client, InputBufferWithOffset, InputBytesNeeded, safrom, socklen);
+                            RecvHandler(Client, InputBufferWithOffset, iResult, safrom, socklen);
                         }
                         else 
                             std::cout << "ReadDataTcpNoBlock buff failed " << WSAGetLastError() << std::endl;
@@ -393,14 +393,15 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
         }
         else
         {            
-            char parsed[MAX_DEVSIZE][NAME_BUFSIZE];
+            char* buf;
+            char* parse = strtok_s(clist->ListBuf, "/", &buf);
+            makeContactList(parse);
             for (int i = 0; i < size; i++)
             {
-                strcpy_s(parsed[i], 128, std::strtok(clist->ListBuf, "/"));
-                std::cout << parsed[i] << std::endl;
+                parse = strtok_s(NULL, "/", &buf);
+                makeContactList(parse);
             }
-            //makeContactList();
-            
+           
             CreateContactList(NULL);
             std::cout << "make contact list" << std::endl;
         }

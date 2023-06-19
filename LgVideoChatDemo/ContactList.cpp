@@ -1,6 +1,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include <vector>
+#include "LgVideoChatDemo.h"
 
 #define BUTTON_CALL 400
 
@@ -134,7 +135,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 void makeContactList(char* contactID)
 {
-    char* cid = (char*)std::malloc(sizeof(128));
+    char* cid = (char*)std::malloc(sizeof(char)*128);
     if (cid != NULL)
     {
         //strncpy_s(cid, contactID, 128);
