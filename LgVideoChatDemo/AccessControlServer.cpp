@@ -404,7 +404,7 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 			TLogin* LoginData = (TLogin*)data;
 			TStatus resp = Disconnected;
 			std::cout << "email :" << LoginData->email << ", pwhash : " << LoginData->passwordHash << std::endl;
-
+			
 			std::vector<TRegistration*>::iterator iter;
 			for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
 			{
@@ -451,14 +451,17 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 			clist->MessageType = SendContactList;
 			clist->ListSize = 0;
 			// Load stored data
+
 			std::vector<TRegistration*>::iterator iter;
 			for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
 			{
-				strncpy_s(clist->ListBuf[clist->ListSize], 128, (*iter)->ContactID, 128);
+				clist->ListBuf[clist->ListSize] = (TNameForm*)std::malloc(sizeof(TNameForm));
+				strncpy_s((clist->ListBuf[clist->ListSize])->ID, 128, (*iter)->ContactID, 128);
 				clist->ListSize += 1;
+				std::cout << (clist->ListBuf[clist->ListSize])->ID << std::endl;
 			}
 			// send contact list
-			sendto(__InputSock, (char*)clist, sizeof(TContactList), 0, (sockaddr*)&sockip, socklen);
+			sendto(__InputSock, (char*)clist, sizeof(TContactList) + clist->ListSize * sizeof(TNameForm), 0, (sockaddr*)&sockip, socklen);
 			free(clist);
 
 			// for i in range(Sizeof stored clist)

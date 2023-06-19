@@ -220,7 +220,7 @@ static DWORD WINAPI ThreadACClient(LPVOID ivalue)
                         if (iResult != SOCKET_ERROR)
                         {
                             //std::cout << "AC client recevied : " << InputBufferWithOffset << std::endl;
-                            RecvHandler(Client, InputBufferWithOffset, InputBytesNeeded, safrom, socklen);
+                            RecvHandler(Client, InputBufferWithOffset, iResult, safrom, socklen);
                         }
                         else 
                             std::cout << "ReadDataTcpNoBlock buff failed " << WSAGetLastError() << std::endl;
@@ -385,19 +385,22 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
     case SendContactList:
     {
         // Load stored data
-        TContactList* clist = (TContactList*)std::malloc(sizeof(TContactList));
-        if (clist->ListSize == 0)
+        TContactList* clist = (TContactList*)data;
+        if (int(clist->ListSize) == 0)
         {
             std::cout << "You're Only User in this System" << std::endl;
         }
         else
-        {
-            CreateContactList(NULL);
-            for (int i = 0; i < clist->ListSize; i++)
-            {
-                makeContactList(clist->ListBuf[i]);
-            }
+        {            
             std::cout << "make contact list" << std::endl;
+            for (int i = 0; i < int(clist->ListSize); i++)
+            {
+                TNameForm* cid = (TNameForm*)clist->ListBuf[i];
+                makeContactList(cid->ID);
+                std::cout << "CID name " << cid->ID << std::endl;
+            }
+            CreateContactList(NULL);
+            
         }
 
         // send contact list
