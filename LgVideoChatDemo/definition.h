@@ -17,7 +17,8 @@
 #define PASSWORD_BUFSIZE	256
 #define ADDRESS_BUFSIZE		256
 #define NAME_BUFSIZE		128
-#define NAME_BUFSIZE		128
+#define TIME_STRSIZE		512
+#define IP_BUFFSIZE			512
 #define PARSE_NAME_BUFSIZE	1024
 #define MAX_DEVSIZE			5
 
@@ -31,9 +32,10 @@ typedef struct oRegistration {
 	char firstName[NAME_BUFSIZE];
 	char lastName[NAME_BUFSIZE];
 	char Address[ADDRESS_BUFSIZE];
-	char MissedCall[5][GENERAL_BUFSIZE];
-	/*sockaddr_in sockaddr;
-	int sockaddrSize = sizeof(sockaddr_in);*/
+	char MissedCall[PARSE_NAME_BUFSIZE];
+	char MissedCallTime[PARSE_NAME_BUFSIZE];
+	char LastIPAddress[IP_BUFFSIZE];
+	char LastRegistTime[TIME_STRSIZE];
 }TRegistration;
 
 typedef struct oLogin {

@@ -7,6 +7,7 @@
 #include <new>
 #include "AccessControlServer.h"
 #include <vector>
+#include <chrono>
 
 
 #include "LgVideoChatDemo.h"
@@ -34,6 +35,7 @@ static void CleanUpACServer(void);
 static DWORD WINAPI ThreadACServer(LPVOID ivalue);
 static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in sockip, int socklen);
 bool RegistrationUserData(TRegistration* data);
+bool RegistrationToFile(void);
 bool sendCommandOnlyMsg(SOCKET __InputSock, sockaddr_in sockip, int socklen, bool answer);
 bool sendStatusMsg(SOCKET __InputSock, sockaddr_in sockip, int socklen, TStatus status);
 
@@ -100,6 +102,9 @@ static void CleanUpACServer(void)
 		closesocket(Accepter);
 		Accepter = INVALID_SOCKET;
 	}
+
+	RegistrationToFile();
+	controlDevices.clear();
 }
 
 static void CloseConnection(void)
@@ -373,6 +378,16 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 			TRegistration* regData = (TRegistration*)data;
 			// Store Data - memory / storage
 			std::cout << "get registration infomation" << std::endl;
+			
+			// macro
+			auto now = std::chrono::system_clock::now();
+			std::time_t end_time = std::chrono::system_clock::to_time_t(now);
+			char* buf = (char *)std::malloc(sizeof(char) *26);
+			ctime_s(buf, 26, &end_time);
+			strcpy_s(regData->LastRegistTime, buf);
+
+			memcpy(regData->LastIPAddress, (char*)&sockip, socklen);
+
 			if (RegistrationUserData(regData))
 			{
 				TCommandOnly* feedback = (TCommandOnly*)std::malloc(sizeof(TCommandOnly));
@@ -416,6 +431,7 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 					if (!strncmp((*iter)->password, LoginData->passwordHash, (*iter)->PasswordSize))
 					{						
 						resp = Connected;
+						memcpy((*iter)->LastIPAddress, (char*)&sockip, socklen);
 					}
 				}
 			}
@@ -489,9 +505,20 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 		case RequestCall:
 		{
 			TDeviceID* tmp = (TDeviceID*)data;
-			// char* dev_id = tmp->DevID;
-			// std::cout << dev_id << std::endl;
-			// Load stored IP_addres of Receiver 
+			char* dev_id = tmp->DevID;
+			std::cout << "Call request to "<< dev_id << std::endl;
+			// Load stored IP_addres of Receiver
+			std::vector<TRegistration*>::iterator iter;
+			for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
+			{
+				if (!strncmp(dev_id, (*iter)->ContactID, NAME_BUFSIZE))
+				{
+					TDeviceID msg{};
+					msg.MessageType = AcceptCall;
+					
+				}
+			}
+			 
 			// sendto(Accepter, (char*)tmp, sizeof(TDeviceID), 0, 0, << sockaddr_forward >> , << sockaddr_len >> );
 			break;
 		}

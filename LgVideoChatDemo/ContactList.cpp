@@ -1,7 +1,9 @@
 #include <windows.h>
 #include <stdio.h>
 #include <vector>
+#include <iostream>
 #include "LgVideoChatDemo.h"
+#include "AccessControlClient.h"
 
 #define BUTTON_CALL 400
 
@@ -17,7 +19,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 int WINAPI CreateContactList(HWND Phwnd)
 {
-    if (!IsLogin)
+    if (devStatus == Disconnected)
     {
         MessageBox(NULL, L"Please Login First", L"Error", MB_OK | MB_ICONERROR);
         return 1;
@@ -89,6 +91,16 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
                             // 선택된 항목 출력
                             MessageBox(hwnd, selectedText, L"Selected Item", MB_OK);
+
+                            // call request
+                            std::cout << "make a call to " << selectedText << std::endl;
+                            TDeviceID msg{};
+                            msg.MessageType = RequestCall;
+                            //int nLength = WideCharToMultiByte(CP_ACP, 0, target, -1, NULL, 0, NULL, NULL);
+                            char* outbuf = (char*)std::malloc(sizeof(char) * NAME_BUFSIZE);
+                            WideCharToMultiByte(CP_ACP, 0, selectedText, -1, outbuf, NAME_BUFSIZE, NULL, NULL);
+                            strcpy_s(msg.DevID, NAME_BUFSIZE, outbuf);
+                            sendMsgtoACS((char*)&msg, sizeof(msg));
                         }
                     }
                 }
