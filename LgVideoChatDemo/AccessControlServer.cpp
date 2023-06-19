@@ -161,6 +161,7 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 	for (int i = 0; i < len_stored; i++)
 	{
 		TRegistration* tmp = (TRegistration*)std::malloc(sizeof(TRegistration));
+		std::memset(tmp, 0, sizeof(TRegistration));
 		if (tmp != NULL)
 		{
 			LoadData(tmp, i);
@@ -357,6 +358,12 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 	return 0;
 }
 
+void ResetAttempt(LPVOID lpArgToCompletionRoutine, DWORD dwTimerLowValue, DWORD dwTimerHighValue)
+{
+	printf("reset attempt count\n");
+	TRegistration* user = (TRegistration*)lpArgToCompletionRoutine;
+	user->LoginAttempt = 0;
+}
 
 static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in sockip, int socklen )
 {
@@ -405,11 +412,68 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 			
 			std::cout << "email :" << LoginData->email << ", pwhash : " << LoginData->passwordHash << std::endl;
 
-			std::vector<TRegistration*>::iterator iter;
-			for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
-			{
-				// need to implement compare email and pwhash !!
+			TRspWithMessage2 rsp{};
+			rsp.MessageType = (char)LoginResponse;
+			rsp.MessageLen1 = (char)strlen("Login Failed");
+			memcpy(rsp.Message1, "Login Failed", strlen("Login Failed"));
+			bool Success = false;
+
+			for (TRegistration* user : controlDevices) {
+				std::cout << "email :" << user->email << ", pwhash : " << user->password << std::endl;
+				if (!strncmp(LoginData->email, user->email, EMAIL_BUFSIZE))
+				{
+					if (user->LoginAttempt > MAX_ALLOW_LOGIN_ATTEMPT)
+					{
+						rsp.MessageLen1 = (char)strlen("Login restricted");
+						memcpy(&rsp.Message1, "Login restricted", strlen("Login restricted"));
+						break;
+					}
+
+					if (!strncmp(LoginData->passwordHash, user->password, PASSWORD_BUFSIZE))
+					{
+						if (user->LoginAttempt < MAX_ALLOW_LOGIN_ATTEMPT)
+						{
+							printf("login success");
+							rsp.MessageLen1 = (char)strlen("Login Success");
+							memcpy(&rsp.Message1, "Login Success", strlen("Login Success"));
+							rsp.MessageLen2 = (char)strlen(user->email);
+							memcpy(&rsp.Message2, user->email, strlen(user->email));
+							Success = true;
+							user->LoginAttempt = 0;
+							break;
+						}
+					}
+				}
 			}
+
+			if (!Success)
+			{
+				for (TRegistration* user : controlDevices) {
+					if (!strncmp(LoginData->email, user->email, EMAIL_BUFSIZE))
+					{
+						user->LoginAttempt++;
+
+						if (user->LoginAttempt == MAX_ALLOW_LOGIN_ATTEMPT)
+						{
+							HANDLE hTimer = CreateWaitableTimer(NULL, FALSE, NULL);
+
+							if (!hTimer) {
+								printf("hTimer is null\n");
+								break;
+							}
+
+							LARGE_INTEGER dueTime;
+							dueTime.QuadPart = -10000000000;
+							SetWaitableTimer(hTimer, &dueTime, 0, ResetAttempt, (LPVOID)(user), FALSE);
+							DWORD result = WaitForSingleObject(hTimer, INFINITE);
+						}
+						break;
+					}
+				}
+			}
+
+			int sent = sendto(__InputSock, (char*)&rsp, sizeof(TRspWithMessage2), 0, (sockaddr*)&sockip, socklen);
+
 
 			// compare stored data
 
@@ -445,6 +509,17 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 			// for i in range(Sizeof stored clist)
 			//		(clist->DevID).append(stored_clist[i])
 			// sendto(Accepter, (char *)clist, sizeof(TContactList), 0, 0, <<sockaddr>>, <<sockaddr_len>>);
+			TContactList rsp{};
+			rsp.MessageType = SendContactList;
+			rsp.ListSize = MAX_DEVSIZE;
+
+			int i = 0;
+			for (TRegistration* user : controlDevices) {
+				memcpy(rsp.ListBuf[i], user->email, strlen(user->email));
+				i++;
+			}
+
+			int sent = sendto(__InputSock, (char*)&rsp, sizeof(TContactList), 0, (sockaddr*)&sockip, socklen);
 
 			break;
 		}
@@ -471,6 +546,29 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 			// std::cout << dev_id << std::endl;
 			break;
 		}
+		case MissedCall:
+		{
+			TReqwithMessage* req = (TReqwithMessage*)data;
+			TMissedCall rsp{};
+
+			rsp.MessageType = MissedCall;
+			rsp.ListSize = MAX_DEVSIZE;
+
+			int i = 0;
+			for (TRegistration* user : controlDevices) {
+				if (!strncmp((const char*)req->Message, user->email, req->MessageLen)) {
+					memcpy(rsp.ListBuf[i], user->MissedCall, strlen((const char *)user->MissedCall));
+					break;
+				}
+				i++;
+			}
+
+			int sent = sendto(__InputSock, (char*)&rsp, sizeof(TMissedCall), 0, (sockaddr*)&sockip, socklen);
+
+			break;
+		}
+
+
 		default:
 			break;
 	}
@@ -484,6 +582,7 @@ bool RegistrationToMem(TRegistration* data)
 	if (len < MAX_DEVSIZE )
 	{
 		TRegistration* input = (TRegistration*)std::malloc(sizeof(TRegistration));
+		std::memset(input, 0, sizeof(TRegistration));
 		if (input != NULL)
 		{
 			memcpy(input, data, sizeof(TRegistration));

@@ -23,6 +23,11 @@ static DWORD ThreadACClientID;
 static DWORD WINAPI ThreadACClient(LPVOID ivalue);
 static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in sockip, int socklen);
 
+char MyEmail[GENERAL_BUFSIZE]{};
+
+extern bool IsLogin;
+extern char ContactList[MAX_DEVSIZE][GENERAL_BUFSIZE];
+
 static void AccessControlClientSetExitEvent(void)
 {
 	if (hEndACClientEvent != INVALID_HANDLE_VALUE)
@@ -139,7 +144,7 @@ static DWORD WINAPI ThreadACClient(LPVOID ivalue)
     char* InputBuffer = NULL;
     char* InputBufferWithOffset = NULL;
     unsigned int CurrentInputBufferSize = 1024 * 10;
-    unsigned int InputBytesNeeded = sizeof(unsigned int);
+    unsigned int InputBytesNeeded = 1024 * 10;
 
     InputBuffer = (char*)std::realloc(InputBuffer, CurrentInputBufferSize);
     InputBufferWithOffset = InputBuffer;
@@ -219,7 +224,7 @@ static DWORD WINAPI ThreadACClient(LPVOID ivalue)
                         if (iResult != SOCKET_ERROR)
                         {
                             //std::cout << "AC client recevied : " << InputBufferWithOffset << std::endl;
-                            RecvHandler(Client, InputBufferWithOffset, InputBytesNeeded, safrom, socklen);
+                            RecvHandler(Client, InputBufferWithOffset, iResult, safrom, socklen);
                         }
                         else 
                             std::cout << "ReadDataTcpNoBlock buff failed " << WSAGetLastError() << std::endl;
@@ -344,6 +349,35 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
     }
     case LoginResponse:
     {
+        std::cout << "login rsp " << std::endl;
+        TRspWithMessage2 *rsp = (TRspWithMessage2*)data;
+        printf("%s", rsp->Message1);
+        if (!strncmp((const char*)rsp->Message1, "Login Success", strlen("Login Success")))
+        {
+            IsLogin = true;
+            //get contact list
+            TReqwithMessage req{};
+            req.MessageType = RequestContactList;
+            sendMsgtoACS((char*)&req, sizeof(req));
+
+            memcpy(MyEmail, rsp->Message2, rsp->MessageLen2);
+
+/*
+            //get missd call
+            req.MessageType = MissedCall;
+
+            req.MessageLen = strlen((const char*)rsp->Message2);
+            memcpy(req.Message, rsp->Message2, req.MessageLen);
+
+            sendMsgtoACS((char*)&req, sizeof(req));
+            */
+
+            MessageBox(NULL, L"Login Success", L"", MB_OK);
+            break;
+        }
+        MessageBox(NULL, L"Login Failed", L"", MB_OK | MB_ICONERROR);
+        
+
         break;
     }
     case LogoutResponse:
@@ -372,6 +406,18 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 
         break;
     }
+    case SendContactList:
+    {
+        TContactList* req = (TContactList*)data;
+
+        for (int i = 0; i < MAX_DEVSIZE; i++) {
+            printf("%s\n", req->ListBuf[i]);
+            if (strlen((const char*)req->ListBuf[i]) > 0)
+                memcpy(ContactList[i], req->ListBuf[i], strlen((const char*)req->ListBuf[i]));
+        }
+
+        break;
+    }
     case RequestCall:
     {
         TDeviceID* tmp = (TDeviceID*)data;
@@ -395,6 +441,18 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
         // std::cout << dev_id << std::endl;
         break;
     }
+    case MissedCall:
+    {
+        TMissedCall* req = (TMissedCall*)data;
+
+        // need to discuss missed call structure
+        for (int i = 0; i < MAX_DEVSIZE; i++) {
+            printf("%s\n", req->ListBuf[i]);
+        }
+
+        break;
+    }
+
     default:
         break;
     }

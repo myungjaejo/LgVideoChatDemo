@@ -10,7 +10,7 @@
 
 #define ACS_PORT		12000
 #define ACS_DELAY		1000
-#define ACS_IP			"192.168.68.104"
+#define ACS_IP			"192.168.219.103"
 
 #define GENERAL_BUFSIZE		128
 #define EMAIL_BUFSIZE		128
@@ -19,6 +19,8 @@
 #define NAME_BUFSIZE		128
 #define NAME_BUFSIZE		128
 #define MAX_DEVSIZE			5
+
+#define MAX_ALLOW_LOGIN_ATTEMPT 3
 
 typedef struct oRegistration {
 	unsigned char MessageType;
@@ -30,6 +32,8 @@ typedef struct oRegistration {
 	char firstName[NAME_BUFSIZE];
 	char lastName[NAME_BUFSIZE];
 	char Address[ADDRESS_BUFSIZE];
+	char MissedCall[5][GENERAL_BUFSIZE];
+	char LoginAttempt = 0;
 	/*sockaddr_in sockaddr;
 	int sockaddrSize = sizeof(sockaddr_in);*/
 }TRegistration;
@@ -47,6 +51,15 @@ typedef struct oContactList {
 	unsigned int ListSize;
 	char ListBuf[MAX_DEVSIZE][NAME_BUFSIZE];
 }TContactList;
+
+// considering ..
+// aaa@aaa.com : 2023-06-19 15:29:33 \n
+// bbb@bbb.com : 2023-06-19 16:22:33
+typedef struct oMissedCall {
+	unsigned char MessageType;
+	unsigned int ListSize;
+	char ListBuf[MAX_DEVSIZE][NAME_BUFSIZE];
+}TMissedCall;
 
 typedef struct oDeviceID {
 	unsigned char MessageType;
@@ -70,6 +83,31 @@ typedef struct oRspWithMessage {
 	unsigned char Message[GENERAL_BUFSIZE];
 }TRspWithMessage;
 
+typedef struct oRspWithMessage2 {
+	unsigned char MessageType;
+	unsigned char MessageLen1;
+	unsigned char Message1[GENERAL_BUFSIZE];
+	unsigned char MessageLen2;
+	unsigned char Message2[GENERAL_BUFSIZE];
+}TRspWithMessage2;
+
+typedef struct oRspResultWithMessage {
+	unsigned char MessageType;
+	int result;
+	unsigned char MessageLen;
+	unsigned char Message[GENERAL_BUFSIZE];
+}TRspResultWithMessage;
+
+typedef struct oRep {
+	unsigned char MessageType;
+}TReq;
+
+typedef struct oRepwithMessage {
+	unsigned char MessageType;
+	unsigned char MessageLen;
+	unsigned char Message[GENERAL_BUFSIZE];
+}TReqwithMessage;
+
 typedef enum {
 	Registration = 0x41,
 	RegistrationResponse,
@@ -83,5 +121,6 @@ typedef enum {
 	SendContactList,
 	RequestCall,
 	AcceptCall,
-	RejectCall
+	RejectCall,
+	MissedCall,
 }TNetworkCommand;

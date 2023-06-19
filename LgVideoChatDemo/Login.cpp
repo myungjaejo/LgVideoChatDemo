@@ -135,8 +135,9 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     }
 
                     char PasswdHash[65];
+                    size_t len = _tcslen(Passwd);
 
-                    SHA256Hash(Passwd, _tcslen(Passwd), PasswdHash);
+                    SHA256Hash(Passwd, len, PasswdHash);
                     std::cout << "SHA-256 : " << PasswdHash << std::endl;
 
                     TLogin login{};
@@ -147,7 +148,7 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     memcpy(login.passwordHash, PasswdHash, 64);
                     // MessageBox(hwnd, TEXT("BUTTON_LOGIN"), TEXT("TEST"), MB_OK | MB_ICONEXCLAMATION);
                     sendMsgtoACS((char*) &login, sizeof(login));
-
+                                       
                     break;
                 }
                 case BUTTON_REGISTER:

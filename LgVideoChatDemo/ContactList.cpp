@@ -1,11 +1,14 @@
 #include <windows.h>
 #include <stdio.h>
+#include "definition.h"
 
 #define BUTTON_CALL 400
 
 HWND hwnd, hComboBox, hCallButton;
 
 extern bool IsLogin;
+extern char MyEmail[GENERAL_BUFSIZE];
+char ContactList[5][GENERAL_BUFSIZE]{};
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
@@ -94,13 +97,17 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             // ComboBox 생성
             hComboBox = CreateWindowEx(0, L"ComboBox", NULL, WS_CHILD | WS_VISIBLE | CBS_SIMPLE,
                 10, 10, 200, 200, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
-        
-            // ComboBox에 항목 추가
-            SendMessage(hComboBox, CB_ADDSTRING, 0, (LPARAM)L"Item 1");
-            SendMessage(hComboBox, CB_ADDSTRING, 0, (LPARAM)L"Item 2");
-            SendMessage(hComboBox, CB_ADDSTRING, 0, (LPARAM)L"Item 3");
-            SendMessage(hComboBox, CB_ADDSTRING, 0, (LPARAM)L"Item 4");
-            SendMessage(hComboBox, CB_ADDSTRING, 0, (LPARAM)L"Item 5");
+
+            
+            TCHAR Contact[5][GENERAL_BUFSIZE]{};
+
+            for (int i = 0; i < 5; i++)
+            {
+                if (strlen((const char*)ContactList[i]) > 0) { // need to exclue myself?
+                    MultiByteToWideChar(CP_ACP, 0, ContactList[i], -1, Contact[i], GENERAL_BUFSIZE);
+                    SendMessage(hComboBox, CB_ADDSTRING, 0, (LPARAM)Contact[i]);
+                }
+            }
         }
         break;
         
