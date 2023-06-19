@@ -24,7 +24,7 @@
 #include "AccessControlServer.h"
 #include "definition.h"
 #include "ContactList.h"
-
+#include "TimeUtil.h"
 
 
 #pragma comment(lib,"comctl32.lib")

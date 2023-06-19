@@ -257,6 +257,7 @@
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="TcpSendRecv.h" />
+    <ClInclude Include="TimeUtil.h" />
     <ClInclude Include="VideoClient.h" />
     <ClInclude Include="VideoServer.h" />
     <ClInclude Include="VoipNetwork.h" />
@@ -278,6 +279,7 @@
     <ClCompile Include="Login.cpp" />
     <ClCompile Include="Register.cpp" />
     <ClCompile Include="TcpSendRecv.cpp" />
+    <ClCompile Include="TimeUtil.cpp" />
     <ClCompile Include="VideoClient.cpp" />
     <ClCompile Include="VideoServer.cpp" />
     <ClCompile Include="VoipNetwork.cpp" />
