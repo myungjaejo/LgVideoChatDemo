@@ -464,6 +464,9 @@
     <ClCompile Include="ContactList.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ForgetPasswd.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="LgVideoChatDemo.rc">

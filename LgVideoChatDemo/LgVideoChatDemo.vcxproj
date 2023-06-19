@@ -271,6 +271,7 @@
     <ClCompile Include="ContactList.cpp" />
     <ClCompile Include="DisplayImage.cpp" />
     <ClCompile Include="filemanager.cpp" />
+    <ClCompile Include="ForgetPasswd.cpp" />
     <ClCompile Include="jsoncpp.cpp" />
     <ClCompile Include="LgVideoChatDemo.cpp" />
     <ClCompile Include="litevad.cpp" />

@@ -18,6 +18,8 @@
 #define BUTTON_REGISTER 301
 #define BUTTON_FORGETPASSWD 302
 
+extern void CreateForgetPasswd(HWND phwnd);
+
 const int maxEmailLength = 30;
 const int maxPasswdLength = 30;
 HWND hwndEmail, hwndPassword, hwndLogin, hwndRegister, hwndForgetPasswd;
@@ -194,7 +196,8 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 }
                 case BUTTON_FORGETPASSWD:
                 {
-                    MessageBox(hwnd, TEXT("BUTTON_FORGETPASSWD"), TEXT("TEST"), MB_OK | MB_ICONEXCLAMATION);
+                    CreateForgetPasswd(hwnd);
+                    //MessageBox(hwnd, TEXT("BUTTON_FORGETPASSWD"), TEXT("TEST"), MB_OK | MB_ICONEXCLAMATION);
                     break;
                 }
                 default:
