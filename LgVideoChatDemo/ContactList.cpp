@@ -135,11 +135,12 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 void makeContactList(char* contactID)
 {
-    char* cid = (char*)std::malloc(sizeof(char)*128);
-    if (cid != NULL)
-    {
-        //strncpy_s(cid, contactID, 128);
-        strncpy_s(cid, 128, contactID, 128);
-        ContactList.push_back(cid);
-    }
+    ContactList.push_back(contactID);
+    //char* cid = (char*)std::malloc(sizeof(char)*128);
+    //if (cid != NULL)
+    //{
+    //    //strncpy_s(cid, contactID, 128);
+    //    strncpy_s(cid, 128, contactID, 128);
+    //    ContactList.push_back(cid);
+    //}
 }

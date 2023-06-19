@@ -396,7 +396,7 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
             char* buf;
             char* parse = strtok_s(clist->ListBuf, "/", &buf);
             makeContactList(parse);
-            for (int i = 0; i < size; i++)
+            for (int i = 1; i < size; i++)
             {
                 parse = strtok_s(NULL, "/", &buf);
                 makeContactList(parse);
