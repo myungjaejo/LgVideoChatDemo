@@ -43,14 +43,10 @@ typedef struct oLogin {
 	char passwordHash[PASSWORD_BUFSIZE];
 }TLogin;
 
-typedef struct oNameForm {
-	char ID[NAME_BUFSIZE];
-}TNameForm;
-
 typedef struct oContactList {
 	unsigned char MessageType;
-	unsigned char ListSize;
-	TNameForm* ListBuf[MAX_DEVSIZE];
+	unsigned int ListSize;
+	char ListBuf[MAX_DEVSIZE][NAME_BUFSIZE];
 }TContactList;
 
 typedef struct oDeviceID {

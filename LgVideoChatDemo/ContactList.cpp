@@ -16,11 +16,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 int WINAPI CreateContactList(HWND Phwnd)
 {
-    //if (!IsLogin)
-    //{
-    //    MessageBox(NULL, L"Please Login First", L"Error", MB_OK | MB_ICONERROR);
-    //    return 1;
-    //}
+    if (!IsLogin)
+    {
+        MessageBox(NULL, L"Please Login First", L"Error", MB_OK | MB_ICONERROR);
+        return 1;
+    }
     // 윈도우 클래스 등록
     WNDCLASS wc = { 0 };
     wc.lpfnWndProc = WindowProc;
