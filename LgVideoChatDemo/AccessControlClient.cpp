@@ -27,6 +27,7 @@ char MyEmail[GENERAL_BUFSIZE]{};
 
 extern bool IsLogin;
 extern char ContactList[MAX_DEVSIZE][GENERAL_BUFSIZE];
+extern HWND hwndCreateRegister, hwndLogin;
 
 static void AccessControlClientSetExitEvent(void)
 {
@@ -335,7 +336,6 @@ int OnDisconnectACS(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     return 1;
 }
 
-
 static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in sockip, int socklen)
 {
     oCommandOnly* getMsg = (oCommandOnly*)data;
@@ -346,6 +346,14 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
     {
         // Registration
         std::cout << "registed User Information " << std::endl;
+
+        if (getMsg->answer) {
+            SendMessage(hwndCreateRegister, WM_DESTROY, 0, 0);
+            MessageBox(NULL, L"Registered Successfully", L"", MB_OK);
+        }
+        else {
+            MessageBox(NULL, L"Registration Failed", L"", MB_OK);
+        }
 
         break;
     }
@@ -374,11 +382,12 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
             sendMsgtoACS((char*)&req, sizeof(req));
             */
 
+            SendMessage(hwndLogin, WM_DESTROY, 0, 0);
             MessageBox(NULL, L"Login Success", L"", MB_OK);
+
             break;
         }
         MessageBox(NULL, L"Login Failed", L"", MB_OK | MB_ICONERROR);
-        
 
         break;
     }

@@ -11,7 +11,8 @@ extern void CopyTCharToChar(TCHAR* tcharString, char* CharString, int length);
 #define BUTTON_JOINUS 400
 const int maxLength = 255;
 
-HWND hwndRegisterEmail, hwndRegisterPassword, hwndRegisterConfirmPassword, hwndRegisterFirstName, hwndRegisterLastName, hwndRegisterAddress, hwndRegisterCID, hwndJoinUs;
+HWND hwndCreateRegister, hwndRegisterEmail, hwndRegisterPassword, hwndRegisterConfirmPassword, \
+hwndRegisterFirstName, hwndRegisterLastName, hwndRegisterAddress, hwndRegisterCID;
 
 bool checkPasswordRule(HWND hwnd, TCHAR* Passwd, unsigned int maxLength);
 bool checkConfirmPasswd(HWND hwnd, const TCHAR* passwd, size_t passwdSize, TCHAR* confirmPasswd, size_t confirmPasswdSize);
@@ -56,7 +57,6 @@ LRESULT CALLBACK RegisterProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 TCHAR LastName[maxLength] = TEXT("");
                 TCHAR Address[maxLength] = TEXT("");
                 TCHAR ContactID[maxLength] = TEXT("");
-
 
                 GetWindowText(hwndRegisterEmail, Email, maxLength);
                 GetWindowText(hwndRegisterPassword, Passwd, maxLength);
@@ -202,7 +202,7 @@ void RegisterCreateForm(HWND parentHwnd)
     wc.lpszClassName = L"RegisterWindowClass";
     RegisterClass(&wc);
 
-    HWND hwnd = CreateWindowEx(
+    hwndCreateRegister = CreateWindowEx(
         0,
         L"RegisterWindowClass",
         L"Register",
@@ -217,7 +217,7 @@ void RegisterCreateForm(HWND parentHwnd)
         L"Email",
         WS_VISIBLE | WS_CHILD,
         20, 20, 300, 20,
-        hwnd, NULL, NULL, NULL
+        hwndCreateRegister, NULL, NULL, NULL
     );
 
     hwndRegisterEmail = CreateWindowEx(
@@ -226,7 +226,7 @@ void RegisterCreateForm(HWND parentHwnd)
         L"",
         WS_VISIBLE | WS_CHILD | ES_AUTOHSCROLL,
         20, 50, 300, 20,
-        hwnd, NULL, NULL, NULL
+        hwndCreateRegister, NULL, NULL, NULL
     );
 
     HWND hwndRegisterPasswordLabel = CreateWindowEx(
@@ -235,7 +235,7 @@ void RegisterCreateForm(HWND parentHwnd)
         L"Password",
         WS_VISIBLE | WS_CHILD,
         20, 80, 300, 20,
-        hwnd, NULL, NULL, NULL
+        hwndCreateRegister, NULL, NULL, NULL
     );
 
     hwndRegisterPassword = CreateWindowEx(
@@ -244,7 +244,7 @@ void RegisterCreateForm(HWND parentHwnd)
         L"",
         WS_VISIBLE | WS_CHILD | ES_AUTOHSCROLL | ES_PASSWORD,
         20, 110, 300, 20,
-        hwnd, NULL, NULL, NULL
+        hwndCreateRegister, NULL, NULL, NULL
     );
 
     HWND hwndRegisterConfirmPasswordLabel = CreateWindowEx(
@@ -253,7 +253,7 @@ void RegisterCreateForm(HWND parentHwnd)
         L"Confirm Password",
         WS_VISIBLE | WS_CHILD,
         20, 140, 300, 20,
-        hwnd, NULL, NULL, NULL
+        hwndCreateRegister, NULL, NULL, NULL
     );
 
     hwndRegisterConfirmPassword = CreateWindowEx(
@@ -262,7 +262,7 @@ void RegisterCreateForm(HWND parentHwnd)
         L"",
         WS_VISIBLE | WS_CHILD | ES_AUTOHSCROLL | ES_PASSWORD,
         20, 170, 300, 20,
-        hwnd, NULL, NULL, NULL
+        hwndCreateRegister, NULL, NULL, NULL
     );
 
     HWND hwndRegisterFirstNameLabel = CreateWindowEx(
@@ -271,7 +271,7 @@ void RegisterCreateForm(HWND parentHwnd)
         L"First Name",
         WS_VISIBLE | WS_CHILD,
         20, 200, 300, 20,
-        hwnd, NULL, NULL, NULL
+        hwndCreateRegister, NULL, NULL, NULL
     );
 
     hwndRegisterFirstName = CreateWindowEx(
@@ -280,7 +280,7 @@ void RegisterCreateForm(HWND parentHwnd)
         L"",
         WS_VISIBLE | WS_CHILD | ES_AUTOHSCROLL ,
         20, 230, 300, 20,
-        hwnd, NULL, NULL, NULL
+        hwndCreateRegister, NULL, NULL, NULL
     );
 
     HWND hwndRegisterLastNameLabel = CreateWindowEx(
@@ -289,7 +289,7 @@ void RegisterCreateForm(HWND parentHwnd)
         L"Last Name",
         WS_VISIBLE | WS_CHILD,
         20, 260, 300, 20,
-        hwnd, NULL, NULL, NULL
+        hwndCreateRegister, NULL, NULL, NULL
     );
 
     hwndRegisterLastName = CreateWindowEx(
@@ -298,7 +298,7 @@ void RegisterCreateForm(HWND parentHwnd)
         L"",
         WS_VISIBLE | WS_CHILD | ES_AUTOHSCROLL ,
         20, 290, 300, 20,
-        hwnd, NULL, NULL, NULL
+        hwndCreateRegister, NULL, NULL, NULL
     );
 
     HWND hwndRegisterAddressLabel = CreateWindowEx(
@@ -307,7 +307,7 @@ void RegisterCreateForm(HWND parentHwnd)
         L"Address",
         WS_VISIBLE | WS_CHILD,
         20, 320, 300, 20,
-        hwnd, NULL, NULL, NULL
+        hwndCreateRegister, NULL, NULL, NULL
     );
 
     hwndRegisterAddress = CreateWindowEx(
@@ -316,7 +316,7 @@ void RegisterCreateForm(HWND parentHwnd)
         L"",
         WS_VISIBLE | WS_CHILD | ES_AUTOHSCROLL ,
         20, 350, 300, 20,
-        hwnd, NULL, NULL, NULL
+        hwndCreateRegister, NULL, NULL, NULL
     );
 
     HWND hwndRegisterCIDLabel = CreateWindowEx(
@@ -325,7 +325,7 @@ void RegisterCreateForm(HWND parentHwnd)
         L"ContactID",
         WS_VISIBLE | WS_CHILD,
         20, 380, 300, 20,
-        hwnd, NULL, NULL, NULL
+        hwndCreateRegister, NULL, NULL, NULL
     );
 
     hwndRegisterCID = CreateWindowEx(
@@ -334,18 +334,18 @@ void RegisterCreateForm(HWND parentHwnd)
         L"",
         WS_VISIBLE | WS_CHILD | ES_AUTOHSCROLL,
         20, 410, 300, 20,
-        hwnd, NULL, NULL, NULL
+        hwndCreateRegister, NULL, NULL, NULL
     );
 
-    hwndJoinUs = CreateWindowEx(
+    HWND hwndJoinUs = CreateWindowEx(
         0,
         L"BUTTON",
         L"Join Us",
         WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
         20, 440, 300, 30,
-        hwnd, (HMENU)BUTTON_JOINUS, NULL, NULL
+        hwndCreateRegister, (HMENU)BUTTON_JOINUS, NULL, NULL
     );
     // Show the main window
-    ShowWindow(hwnd, SW_SHOWDEFAULT);
-    UpdateWindow(hwnd);
+    ShowWindow(hwndCreateRegister, SW_SHOWDEFAULT);
+    UpdateWindow(hwndCreateRegister);
 }

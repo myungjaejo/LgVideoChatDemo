@@ -19,6 +19,8 @@ static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
         {
             case BUTTON_SEND:
             {
+                TCHAR Email[128] = TEXT("");
+                GetWindowText(hwndEmail, Email, 128);
             
             }
             break;
