@@ -385,18 +385,23 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
     case SendContactList:
     {
         // Load stored data
-        TContactList* clist = (TContactList*)std::malloc(sizeof(TContactList));
-        if (clist->ListSize == 0)
+        TContactList* clist = (TContactList*)data;
+        int size = int(clist->ListSize);
+        if (size == 0)
         {
             std::cout << "You're Only User in this System" << std::endl;
         }
         else
-        {
-            CreateContactList(NULL);
-            for (int i = 0; i < clist->ListSize; i++)
+        {            
+            char parsed[MAX_DEVSIZE][NAME_BUFSIZE];
+            for (int i = 0; i < size; i++)
             {
-                makeContactList(clist->ListBuf[i]);
+                strcpy_s(parsed[i], 128, std::strtok(clist->ListBuf, "/"));
+                std::cout << parsed[i] << std::endl;
             }
+            //makeContactList();
+            
+            CreateContactList(NULL);
             std::cout << "make contact list" << std::endl;
         }
 

@@ -454,9 +454,11 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 			std::vector<TRegistration*>::iterator iter;
 			for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
 			{
-				strncpy_s(clist->ListBuf[clist->ListSize], 128, (*iter)->ContactID, 128);
+				strcat(clist->ListBuf, "/");
+				strcat(clist->ListBuf, (*iter)->ContactID);
 				clist->ListSize += 1;
 			}
+			std::cout << "merge data : << " << clist->ListBuf << std::endl;
 			// send contact list
 			sendto(__InputSock, (char*)clist, sizeof(TContactList), 0, (sockaddr*)&sockip, socklen);
 			free(clist);

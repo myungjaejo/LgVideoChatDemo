@@ -18,6 +18,7 @@
 #define ADDRESS_BUFSIZE		256
 #define NAME_BUFSIZE		128
 #define NAME_BUFSIZE		128
+#define PARSE_NAME_BUFSIZE	1024
 #define MAX_DEVSIZE			5
 
 typedef struct oRegistration {
@@ -46,7 +47,7 @@ typedef struct oLogin {
 typedef struct oContactList {
 	unsigned char MessageType;
 	unsigned int ListSize;
-	char ListBuf[MAX_DEVSIZE][NAME_BUFSIZE];
+	char ListBuf[PARSE_NAME_BUFSIZE];
 }TContactList;
 
 typedef struct oDeviceID {
