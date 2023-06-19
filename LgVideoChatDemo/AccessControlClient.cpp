@@ -304,11 +304,13 @@ int OnConnectACS(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             std::cout << "Connected to Server" << std::endl;
             StartAccessControlClient();
             std::cout << "Client Started.." << std::endl;
+
             return 1;
         }
         else
         {
             std::cout << "Connection AC server Failed!" << std::endl;
+            MessageBox(hWnd, TEXT("Connection AC server Failed!"), TEXT("ERROR"), MB_OK | MB_ICONEXCLAMATION);
             return 0;
         }
 

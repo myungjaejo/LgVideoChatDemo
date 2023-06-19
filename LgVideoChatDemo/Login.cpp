@@ -8,6 +8,11 @@
 #include "AccessControlClient.h"
 #include "AccessControlServer.h"
 #include "ContactList.h"
+#include "include/openssl/sha.h"
+#include <openssl/bio.h>
+#include <openssl/evp.h>
+
+#pragma comment(lib, "..\\built-libs\\libcrypto.lib")
 
 #define BUTTON_LOGIN 300
 #define BUTTON_REGISTER 301
@@ -52,7 +57,33 @@ bool ValidateEmailAddress(const TCHAR* email) {
     return std::regex_match(emailString, pattern);
 }
 
+#if 0 // remove later
 void SHA256Hash(const TCHAR* input, size_t inputLength, char* output) {
+    const unsigned char* inputData = reinterpret_cast<const unsigned char*>(input);
+
+    SHA256_CTX sha256;
+    SHA256_Init(&sha256);
+    SHA256_Update(&sha256, inputData, inputLength);
+    SHA256_Final(reinterpret_cast<unsigned char*>(output), &sha256);
+
+    BIO* mem = BIO_new(BIO_s_mem());
+    BIO* base64 = BIO_new(BIO_f_base64());
+    BIO_push(base64, mem);
+
+    BIO_write(base64, output, SHA256_DIGEST_LENGTH);
+    BIO_flush(base64);
+
+    char* encodedOutput;
+    long encodedLength = BIO_get_mem_data(mem, &encodedOutput);
+
+    std::memcpy(output, encodedOutput, encodedLength - 1);
+    output[encodedLength - 1] = '\0';
+
+    BIO_free_all(base64);
+}
+#endif
+
+void SHA256Hash(const char* input, size_t inputLength, char* output) {
     HCRYPTPROV hProv = 0;
     HCRYPTHASH hHash = 0;
     BYTE hash[32];
@@ -134,11 +165,15 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                         return 1;
                     }
 
-                    char PasswdHash[65];
+                    char PasswdChar[GENERAL_BUFSIZE] = { 0, };
+                    char PasswdHash[65] = { 0, };
                     size_t len = _tcslen(Passwd);
 
-                    SHA256Hash(Passwd, len, PasswdHash);
-                    std::cout << "SHA-256 : " << PasswdHash << std::endl;
+                    CopyTCharToChar(Passwd, PasswdChar, len);
+
+                    //SHA256Hash(Passwd, len, PasswdHash);
+                    SHA256Hash((const char *)PasswdChar, len, PasswdHash);
+                    std::cout << "SHA-256 : " << PasswdChar << std::endl;
 
                     TLogin login{};
                     login.MessageType = (char)Login;
