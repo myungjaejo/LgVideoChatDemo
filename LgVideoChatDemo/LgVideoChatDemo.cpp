@@ -42,8 +42,8 @@
 #define IDC_EDIT_REMOTE        1011
 #define IDC_CHECKBOX_LOOPBACK  1012 
 #define IDC_EDIT               1013 
-//#define IDM_CONNECT            1014
-//#define IDM_DISCONNECT         1015
+//#define IDM_CALL_REQUET        1014
+//#define IDM_CALL_DENY          1015
 //#define IDM_START_SERVER       1016
 //#define IDM_STOP_SERVER        1017
 #define IDC_LABEL_VAD_STATE    1018
@@ -331,19 +331,19 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             case IDM_EXIT:
                 DestroyWindow(hWnd);
                 break;
-            case IDM_CONNECT:
+            case IDM_CALL_REQUET:
                 if (OnConnect(hWnd, message, wParam, lParam))
                 {
-                    SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CONNECT,
+                    SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUET,
                         (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
-                    SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_DISCONNECT,
+                    SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_DENY,
                         (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
                 }
                 break;
-            case IDM_DISCONNECT:
-                SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CONNECT,
+            case IDM_CALL_DENY:
+                SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUET,
                     (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
-                SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_DISCONNECT,
+                SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_DENY,
                     (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
                 OnDisconnect(hWnd, message, wParam, lParam);
                 break;
@@ -402,14 +402,14 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         break;
     case WM_CLIENT_LOST:
         std::cout << "WM_CLIENT_LOST" << std::endl;
-        SendMessage(hWndMain, WM_COMMAND, IDM_DISCONNECT, 0);
+        SendMessage(hWndMain, WM_COMMAND, IDM_CALL_DENY, 0);
         break;
     case WM_REMOTE_CONNECT:
-        SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CONNECT,
+        SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUET,
             (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
         break;
     case WM_REMOTE_LOST:
-        SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CONNECT,
+        SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUET,
             (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
         break;
     case WM_VAD_STATE:
@@ -510,8 +510,8 @@ HWND CreateSimpleToolbar(HWND hWndParent)
     TBBUTTON tbButtons[numButtons] =
     {
 #if UI_FIVE
-        { MAKELONG(VIEW_NETCONNECT,    ImageListID), IDM_CONNECT,     TBSTATE_INDETERMINATE,       buttonStyles, {0}, 0, (INT_PTR)L"Connect" },
-        { MAKELONG(VIEW_NETDISCONNECT, ImageListID), IDM_DISCONNECT,  TBSTATE_INDETERMINATE, buttonStyles, {0}, 0, (INT_PTR)L"Disconnect"},
+        { MAKELONG(VIEW_NETCONNECT,    ImageListID), IDM_CALL_REQUET,     TBSTATE_INDETERMINATE,       buttonStyles, {0}, 0, (INT_PTR)L"   Call   " },
+        { MAKELONG(VIEW_NETDISCONNECT, ImageListID), IDM_CALL_DENY,  TBSTATE_INDETERMINATE, buttonStyles, {0}, 0, (INT_PTR)L"Call Deny"},
         { MAKELONG(VIEW_NETCONNECT,    ImageListID), IDM_START_SERVER,TBSTATE_INDETERMINATE,       buttonStyles, {0}, 0, (INT_PTR)L"Start Server"},
         { MAKELONG(VIEW_NETDISCONNECT, ImageListID), IDM_STOP_SERVER, TBSTATE_INDETERMINATE, buttonStyles, {0}, 0, (INT_PTR)L"Stop Server"},
         { MAKELONG(VIEW_NETCONNECT,    ImageListID), IDM_LOGIN,       TBSTATE_ENABLED,       buttonStyles, {0}, 0, (INT_PTR)L"login"},

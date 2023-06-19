@@ -1,11 +1,16 @@
 #include <windows.h>
 #include <stdio.h>
+#include <vector>
 
 #define BUTTON_CALL 400
 
 HWND hwnd, hComboBox, hCallButton;
 
 extern bool IsLogin;
+
+std::vector<char*> ContactList;
+//char ContactList[5][128];
+//int contactListSize = 0;
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
@@ -96,11 +101,15 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 10, 10, 200, 200, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
         
             // ComboBox에 항목 추가
-            SendMessage(hComboBox, CB_ADDSTRING, 0, (LPARAM)L"Item 1");
-            SendMessage(hComboBox, CB_ADDSTRING, 0, (LPARAM)L"Item 2");
-            SendMessage(hComboBox, CB_ADDSTRING, 0, (LPARAM)L"Item 3");
-            SendMessage(hComboBox, CB_ADDSTRING, 0, (LPARAM)L"Item 4");
-            SendMessage(hComboBox, CB_ADDSTRING, 0, (LPARAM)L"Item 5");
+            TCHAR Contact[128];
+
+            std::vector<char*>::iterator iter;
+
+            for (iter = ContactList.begin(); iter != ContactList.end(); iter++)
+            {
+                MultiByteToWideChar(CP_ACP, 0, *iter, -1, Contact, 128);
+                SendMessage(hComboBox, CB_ADDSTRING, 0, (LPARAM)Contact);
+            }
         }
         break;
         
@@ -121,4 +130,15 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     }
 
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
+}
+
+void makeContactList(char* contactID)
+{
+    char* cid = (char*)std::malloc(sizeof(128));
+    if (cid != NULL)
+    {
+        //strncpy_s(cid, contactID, 128);
+        strncpy_s(cid, 128, contactID, 128);
+        ContactList.push_back(cid);
+    }
 }

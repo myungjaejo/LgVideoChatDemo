@@ -30,6 +30,7 @@ typedef struct oRegistration {
 	char firstName[NAME_BUFSIZE];
 	char lastName[NAME_BUFSIZE];
 	char Address[ADDRESS_BUFSIZE];
+	char MissedCall[5][GENERAL_BUFSIZE];
 	/*sockaddr_in sockaddr;
 	int sockaddrSize = sizeof(sockaddr_in);*/
 }TRegistration;

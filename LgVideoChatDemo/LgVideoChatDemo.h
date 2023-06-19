@@ -14,8 +14,8 @@
 #define VOIP_REMOTE_PORT 10001
 #define VIDEO_FRAME_DELAY 100
 
-#define IDM_CONNECT            1014
-#define IDM_DISCONNECT         1015
+#define IDM_CALL_REQUET        1014
+#define IDM_CALL_DENY          1015
 #define IDM_START_SERVER       1016
 #define IDM_STOP_SERVER        1017
 

@@ -11,7 +11,7 @@
 #include "AccessControlClient.h"
 #include "LgVideoChatDemo.h"
 #include "TcpSendRecv.h"
-//#include "definition.h"
+#include "ContactList.h"
 
 static HANDLE hClientEvent = INVALID_HANDLE_VALUE;
 static HANDLE hEndACClientEvent = INVALID_HANDLE_VALUE;
@@ -349,9 +349,18 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
         if (sMsg->status == Connected)
         {
             devStatus = Connected;
-            SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CONNECT,
+            SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUET,
                 (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
+            
             std::cout << "Lonin Success " << std::endl;
+
+            TCommandOnly* msg = (TCommandOnly*)std::malloc(sizeof(TCommandOnly));
+            if (msg != NULL)
+            {
+                msg->MessageType = RequestContactList;
+                msg->answer = true;
+                sendMsgtoACS((char*)msg, sizeof(TCommandOnly));
+            }
         }
         else
         {
@@ -373,9 +382,23 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
         break;
     }
 
-    case RequestContactList:
+    case SendContactList:
     {
         // Load stored data
+        TContactList* clist = (TContactList*)std::malloc(sizeof(TContactList));
+        if (clist->ListSize == 0)
+        {
+            std::cout << "You're Only User in this System" << std::endl;
+        }
+        else
+        {
+            CreateContactList(NULL);
+            for (int i = 0; i < clist->ListSize; i++)
+            {
+                makeContactList(clist->ListBuf[i]);
+            }
+            std::cout << "make contact list" << std::endl;
+        }
 
         // send contact list
         // TContactList *clist = (TContactList *)std::malloc(sizeof(TContactList));
