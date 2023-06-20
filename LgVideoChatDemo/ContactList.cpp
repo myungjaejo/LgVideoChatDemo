@@ -94,12 +94,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
                             // call request
                             std::cout << "make a call to " << selectedText << std::endl;
+                            devStatus = Caller;
                             TDeviceID msg{};
                             msg.MessageType = RequestCall;
                             //int nLength = WideCharToMultiByte(CP_ACP, 0, target, -1, NULL, 0, NULL, NULL);
                             char* outbuf = (char*)std::malloc(sizeof(char) * NAME_BUFSIZE);
                             WideCharToMultiByte(CP_ACP, 0, selectedText, -1, outbuf, NAME_BUFSIZE, NULL, NULL);
-                            strcpy_s(msg.DevID, NAME_BUFSIZE, outbuf);
+                            strcpy_s(msg.ToDevID, NAME_BUFSIZE, outbuf);
                             sendMsgtoACS((char*)&msg, sizeof(msg));
                         }
                     }
@@ -120,6 +121,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
             for (iter = ContactList.begin(); iter != ContactList.end(); iter++)
             {
+                if (!strcmp(MyID, (*iter))) continue;
                 MultiByteToWideChar(CP_ACP, 0, *iter, -1, Contact, 128);
                 SendMessage(hComboBox, CB_ADDSTRING, 0, (LPARAM)Contact);
             }

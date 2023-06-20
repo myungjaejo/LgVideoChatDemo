@@ -154,6 +154,7 @@
     <ClInclude Include="VoipNetwork.h" />
     <ClInclude Include="VoipVoice.h" />
     <ClInclude Include="WaveWriter.h" />
+    <ClInclude Include="NotifyCall.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AccessControlClient.cpp" />
@@ -167,6 +168,7 @@
     <ClCompile Include="LgVideoChatDemo.cpp" />
     <ClCompile Include="litevad.cpp" />
     <ClCompile Include="Login.cpp" />
+    <ClCompile Include="NotifyCall.cpp" />
     <ClCompile Include="Register.cpp" />
     <ClCompile Include="TcpSendRecv.cpp" />
     <ClCompile Include="VideoClient.cpp" />

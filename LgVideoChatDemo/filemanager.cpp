@@ -7,12 +7,14 @@
 
 #define DATA_FILE_NAME "data.dat"
 
-#define STR_EMAIL "email"
-#define STR_CONTACT_ID "contactID"
-#define STR_PASSWORD "password"
-#define STR_LAST_NAME "lastName"
-#define STR_FIRST_NAME "firstName"
-#define STR_ADDRESS "address"
+#define STR_EMAIL       "email"
+#define STR_CONTACT_ID  "contactID"
+#define STR_PASSWORD    "password"
+#define STR_LAST_NAME   "lastName"
+#define STR_FIRST_NAME  "firstName"
+#define STR_ADDRESS     "address"
+#define STR_IPADDRESS   "IP"
+#define STR_LASTACCESS  "lastAccess"
 
 
 /*
@@ -68,6 +70,9 @@ bool StoreData(std::vector<TRegistration*> data)
         user[STR_LAST_NAME] = fdata->lastName;
         user[STR_FIRST_NAME] = fdata->firstName;
         user[STR_ADDRESS] = fdata->Address;
+        user[STR_IPADDRESS] = fdata->LastIPAddress;
+        user[STR_LASTACCESS] = fdata->LastRegistTime;
+
         root.append(user);
     }
 
@@ -126,7 +131,9 @@ bool LoadData(TRegistration* data, int idx)
     strncpy_s(data->password, user[STR_PASSWORD].asString().c_str(), 128);
     strncpy_s(data->lastName, user[STR_LAST_NAME].asString().c_str(), 128);
     strncpy_s(data->firstName, user[STR_FIRST_NAME].asString().c_str(), 128);
-    strncpy_s(data->Address, user[STR_ADDRESS].asString().c_str(), 128);
+    strncpy_s(data->Address, user[STR_ADDRESS].asString().c_str(), 256);
+    strncpy_s(data->LastIPAddress, user[STR_IPADDRESS].asString().c_str(), 512);
+    strncpy_s(data->LastRegistTime, user[STR_LASTACCESS].asString().c_str(), 512);
 
     /*
     const int BufferLength = 1024;

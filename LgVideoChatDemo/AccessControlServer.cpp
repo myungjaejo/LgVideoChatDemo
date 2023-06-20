@@ -36,8 +36,11 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue);
 static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in sockip, int socklen);
 bool RegistrationUserData(TRegistration* data);
 bool RegistrationToFile(void);
+char* getFromAddr(SOCKET __InputSock);
+void setMacro(SOCKET __InputSock, TRegistration* regData);
 bool sendCommandOnlyMsg(SOCKET __InputSock, sockaddr_in sockip, int socklen, bool answer);
-bool sendStatusMsg(SOCKET __InputSock, sockaddr_in sockip, int socklen, TStatus status);
+bool sendStatusMsg(SOCKET __InputSock, sockaddr_in sockip, int socklen, char* cid, TStatus status);
+int findReceiverIP(char* recID, sockaddr_in* out);
 
 
 // start Server
@@ -299,7 +302,7 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 					}
 					else
 					{
-						char testText[1000];
+						char testText[1024];
 						int result;
 						sockaddr_in saFrom;
 						int nFromLen = sizeof(sockaddr_in);
@@ -380,13 +383,7 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 			std::cout << "get registration infomation" << std::endl;
 			
 			// macro
-			auto now = std::chrono::system_clock::now();
-			std::time_t end_time = std::chrono::system_clock::to_time_t(now);
-			char* buf = (char *)std::malloc(sizeof(char) *26);
-			ctime_s(buf, 26, &end_time);
-			strcpy_s(regData->LastRegistTime, buf);
-
-			memcpy(regData->LastIPAddress, (char*)&sockip, socklen);
+			setMacro(Accepter, regData);
 
 			if (RegistrationUserData(regData))
 			{
@@ -420,6 +417,7 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 			TStatus resp = Disconnected;
 			std::cout << "email :" << LoginData->email << ", pwhash : " << LoginData->passwordHash << std::endl;
 
+			char* myCID = NULL;
 			std::vector<TRegistration*>::iterator iter;
 			for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
 			{
@@ -432,11 +430,12 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 					{						
 						resp = Connected;
 						memcpy((*iter)->LastIPAddress, (char*)&sockip, socklen);
+						myCID = (*iter)->ContactID;
 					}
 				}
 			}
 			std::cout << "send login response " << resp << std::endl;
-			sendStatusMsg(__InputSock, sockip, socklen, resp);
+			sendStatusMsg(__InputSock, sockip, socklen, myCID, resp);
 			// compare stored data
 
 			// compare result
@@ -505,7 +504,8 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 		case RequestCall:
 		{
 			TDeviceID* tmp = (TDeviceID*)data;
-			char* dev_id = tmp->DevID;
+			char* fromDev = tmp->FromDevID;
+			char* dev_id = tmp->ToDevID;
 			std::cout << "Call request to "<< dev_id << std::endl;
 			// Load stored IP_addres of Receiver
 			std::vector<TRegistration*>::iterator iter;
@@ -514,8 +514,18 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 				if (!strncmp(dev_id, (*iter)->ContactID, NAME_BUFSIZE))
 				{
 					TDeviceID msg{};
-					msg.MessageType = AcceptCall;
-					
+					msg.MessageType = RequestCall;
+
+					strcpy_s(msg.FromDevID, fromDev);
+					strcpy_s(msg.ToDevID, dev_id);
+
+					sockaddr_in sockTo;
+					int ss = sizeof(sockaddr_in);
+					sockTo.sin_family = AF_INET;
+					inet_pton(AF_INET, (*iter)->LastIPAddress, &sockTo.sin_addr.s_addr);
+					sockTo.sin_port = htons(ACS_PORT);
+
+					sendto(Accepter, (char *)&msg, sizeof(msg), 0, (sockaddr *)&sockTo, ss);					
 				}
 			}
 			 
@@ -525,15 +535,50 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 		case AcceptCall:
 		{
 			TDeviceID* tmp = (TDeviceID*)data;
-			// char* dev_id = tmp->DevID;
-			// std::cout << dev_id << std::endl;
+			char* fromDev = tmp->FromDevID;
+			char* dev_id = tmp->ToDevID;
+			std::cout << "Call Accepted from "<< fromDev<< " to " << dev_id << std::endl;
+
+			TAcceptCall msg{};
+			msg.MessageType = AcceptCall;
+
+			std::vector<TRegistration*>::iterator iter;
+			for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
+			{
+				if (!strncmp(fromDev, (*iter)->ContactID, NAME_BUFSIZE))
+				{
+					strcpy_s(msg.IPAddress, (*iter)->LastIPAddress);
+					break;
+				}
+			}
+			sockaddr_in sockto;
+			int iResult = findReceiverIP(msg.ToDevID, &sockto);
+			if (iResult != 0)
+			{
+				strcpy_s(msg.FromDevID, fromDev);
+				strcpy_s(msg.ToDevID, dev_id);
+
+				sendto(Accepter, (char*)&msg, sizeof(msg), 0, (sockaddr*)&sockto, iResult);
+			}			
 			break;
 		}
 		case RejectCall:
 		{
 			TDeviceID* tmp = (TDeviceID*)data;
-			// char* dev_id = tmp->DevID;
-			// std::cout << dev_id << std::endl;
+			char* fromDev = tmp->FromDevID;
+			char* dev_id = tmp->ToDevID;
+			std::cout << "Call rejected from " << fromDev << " to " << dev_id << std::endl;
+			sockaddr_in sockto;
+			int iResult = findReceiverIP(fromDev, &sockto);
+			if (iResult != 0)
+			{
+				TDeviceID msg{};
+				msg.MessageType = RejectCall;
+
+				strcpy_s(msg.FromDevID, fromDev);
+				strcpy_s(msg.ToDevID, dev_id);
+				sendto(Accepter, (char*)&msg, sizeof(msg), 0, (sockaddr*)&sockto, iResult);
+			}
 			break;
 		}
 		default:
@@ -605,16 +650,65 @@ bool sendCommandOnlyMsg(SOCKET __InputSock, sockaddr_in sockip, int socklen, boo
 	return false;
 }
 
-bool sendStatusMsg(SOCKET __InputSock, sockaddr_in sockip, int socklen, TStatus status)
+bool sendStatusMsg(SOCKET __InputSock, sockaddr_in sockip, int socklen, char* cid, TStatus status)
 {
 	TStatusInfo* feedback = (TStatusInfo*)std::malloc(sizeof(TStatusInfo));
 	if (feedback != NULL)
 	{
 		feedback->MessageType =LoginResponse;
 		feedback->status = status;
+		strcpy_s(feedback->myCID, cid);
 		sendto(__InputSock, (char*)feedback, sizeof(TStatusInfo), 0, (sockaddr*)&sockip, socklen);
 		free(feedback);
 		return true;
 	}
 	return false;
+}
+
+void setMacro(SOCKET __InputSock,TRegistration* regData)
+{
+	auto now = std::chrono::system_clock::now();
+	std::time_t end_time = std::chrono::system_clock::to_time_t(now);
+	char* buf = (char*)std::malloc(sizeof(char) * 26);
+	ctime_s(buf, 26, &end_time);
+	strcpy_s(regData->LastRegistTime, buf);
+
+	char ipbuf[32];
+	sockaddr_in sock_a;
+	int size = sizeof(sock_a);
+	memset(&sock_a, 0x00, sizeof(sock_a));
+	getpeername(__InputSock, (sockaddr*)&sock_a, &size);
+	inet_ntop(AF_INET, &sock_a.sin_addr, ipbuf, sizeof(ipbuf));
+
+	//std::cout << "IP address " << ipbuf << std::endl;
+	strcpy_s(regData->LastIPAddress, 32, ipbuf);
+}
+
+char* getFromAddr(SOCKET __InputSock)
+{
+	char* ipbuf = (char *)std::malloc(sizeof(char)*32);
+	sockaddr_in sock_a;
+	int size = sizeof(sock_a);
+	memset(&sock_a, 0x00, sizeof(sock_a));
+	getpeername(__InputSock, (sockaddr*)&sock_a, &size);
+	inet_ntop(AF_INET, &sock_a.sin_addr, ipbuf, sizeof(ipbuf));
+
+	return ipbuf;
+}
+
+int findReceiverIP(char* recID, sockaddr_in *out)
+{
+	std::vector<TRegistration*>::iterator iter;
+	for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
+	{
+		if (!strncmp(recID, (*iter)->ContactID, NAME_BUFSIZE))
+		{
+			int ss = sizeof(sockaddr_in);
+			(*out).sin_family = AF_INET;
+			inet_pton(AF_INET, (*iter)->LastIPAddress, &((*out).sin_addr.s_addr));
+			(*out).sin_port = htons(ACS_PORT);
+			return ss;
+		}
+	}
+	return 0;
 }

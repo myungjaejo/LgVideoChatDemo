@@ -12,6 +12,12 @@
 #include "LgVideoChatDemo.h"
 #include "TcpSendRecv.h"
 #include "ContactList.h"
+#include "NotifyCall.h"
+#include "VideoClient.h"
+#include <opencv2\highgui\highgui.hpp>
+#include <opencv2\opencv.hpp>
+#include "Camera.h"
+#include "DisplayImage.h"
 
 static HANDLE hClientEvent = INVALID_HANDLE_VALUE;
 static HANDLE hEndACClientEvent = INVALID_HANDLE_VALUE;
@@ -23,6 +29,7 @@ static DWORD ThreadACClientID;
 
 static DWORD WINAPI ThreadACClient(LPVOID ivalue);
 static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in sockip, int socklen);
+static int OnConnect(char* IPAddr);
 
 static void AccessControlClientSetExitEvent(void)
 {
@@ -351,8 +358,9 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
             devStatus = Connected;
             SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUET,
                 (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
-            
-            std::cout << "Lonin Success " << std::endl;
+
+            strcpy_s(MyID, sMsg->myCID);
+            std::cout << "Lonin Success - ID : "<< MyID << std::endl;
 
             TCommandOnly* msg = (TCommandOnly*)std::malloc(sizeof(TCommandOnly));
             if (msg != NULL)
@@ -418,6 +426,7 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
     case RequestCall:
     {
         TDeviceID* tmp = (TDeviceID*)data;
+        CreateCallNotification(NULL, tmp->FromDevID);
         // char* dev_id = tmp->DevID;
         // std::cout << dev_id << std::endl;
         // Load stored IP_addres of Receiver 
@@ -426,9 +435,15 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
     }
     case AcceptCall:
     {
-        TDeviceID* tmp = (TDeviceID*)data;
-        // char* dev_id = tmp->DevID;
-        // std::cout << dev_id << std::endl;
+        TAcceptCall* tmp = (TAcceptCall*)data;
+
+        if (devStatus == Caller)
+        {
+            OnConnect(tmp->IPAddress);
+            devStatus = Calling;
+        }
+        /*TDeviceID* msg = (TDeviceID*)data;
+        tmp->FromDevID*/
         break;
     }
     case RejectCall:
@@ -436,6 +451,7 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
         TDeviceID* tmp = (TDeviceID*)data;
         // char* dev_id = tmp->DevID;
         // std::cout << dev_id << std::endl;
+        devStatus = Connected;
         break;
     }
     default:
@@ -444,3 +460,33 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
     return 0;
 }
 
+static int OnConnect(char* IPAddr)
+{
+    if (!IsVideoClientRunning())
+    {
+        if (OpenCamera())
+        {
+            if (ConnectToSever(IPAddr, VIDEO_PORT))
+            {
+                std::cout << "Connected to Server" << std::endl;
+                StartVideoClient();
+                std::cout << "Video Client Started.." << std::endl;
+                VoipVoiceStart(IPAddr, VOIP_LOCAL_PORT, VOIP_REMOTE_PORT, VoipAttr);
+                std::cout << "Voip Voice Started.." << std::endl;
+                return 1;
+            }
+            else
+            {
+                std::cout << "Connection Failed!" << std::endl;
+                return 0;
+            }
+
+        }
+        else
+        {
+            std::cout << "Open Camera Failed" << std::endl;
+            return 0;
+        }
+    }
+    return 0;
+}

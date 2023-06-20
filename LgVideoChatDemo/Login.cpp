@@ -135,6 +135,7 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                         devStatus = Server;
                         SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_START_SERVER,
                             (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
+                        DestroyWindow(hwnd);
                         return 1;
                     }
 

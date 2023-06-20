@@ -24,6 +24,7 @@
 #include "AccessControlServer.h"
 //#include "definition.h"
 #include "ContactList.h"
+#include "NotifyCall.h"
 
 
 
@@ -73,6 +74,7 @@ HWND hWndMainToolbar;
 static HWND hWndEdit;
 
 TStatus devStatus = Disconnected;
+char MyID[NAME_BUFSIZE];
 
 // Forward declarations of functions included in this code module:
 static ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -345,7 +347,19 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                     (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
                 SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_DENY,
                     (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
-                OnDisconnect(hWnd, message, wParam, lParam);
+                if (devStatus == Caller)
+                {
+                    OnDisconnect(hWnd, message, wParam, lParam);
+                }
+                else if (devStatus == Callee)
+                {
+                    StopVideoServer();
+                }
+                else
+                {
+                    std::cout << "ERROR DISConnect " << std::endl;
+                }
+                   
                 break;
             case IDM_START_SERVER:
                 SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_START_SERVER,
@@ -510,9 +524,9 @@ HWND CreateSimpleToolbar(HWND hWndParent)
     TBBUTTON tbButtons[numButtons] =
     {
 #if UI_FIVE
-        { MAKELONG(VIEW_NETCONNECT,    ImageListID), IDM_CALL_REQUET,     TBSTATE_INDETERMINATE,       buttonStyles, {0}, 0, (INT_PTR)L"   Call   " },
+        { MAKELONG(VIEW_NETDISCONNECT, ImageListID), IDM_CALL_REQUET,     TBSTATE_INDETERMINATE,       buttonStyles, {0}, 0, (INT_PTR)L"   Call   " },
         { MAKELONG(VIEW_NETDISCONNECT, ImageListID), IDM_CALL_DENY,  TBSTATE_INDETERMINATE, buttonStyles, {0}, 0, (INT_PTR)L"Call Deny"},
-        { MAKELONG(VIEW_NETCONNECT,    ImageListID), IDM_START_SERVER,TBSTATE_INDETERMINATE,       buttonStyles, {0}, 0, (INT_PTR)L"Start Server"},
+        { MAKELONG(VIEW_NETDISCONNECT, ImageListID), IDM_START_SERVER,TBSTATE_INDETERMINATE,       buttonStyles, {0}, 0, (INT_PTR)L"Start Server"},
         { MAKELONG(VIEW_NETDISCONNECT, ImageListID), IDM_STOP_SERVER, TBSTATE_INDETERMINATE, buttonStyles, {0}, 0, (INT_PTR)L"Stop Server"},
         { MAKELONG(VIEW_NETCONNECT,    ImageListID), IDM_LOGIN,       TBSTATE_ENABLED,       buttonStyles, {0}, 0, (INT_PTR)L"login"},
 #else

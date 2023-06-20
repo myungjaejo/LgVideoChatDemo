@@ -24,6 +24,7 @@ extern TVoipAttr VoipAttr;
 extern char LocalIpAddress[512];
 extern TStatus devStatus;
 extern HWND hWndMainToolbar;
+extern char MyID[NAME_BUFSIZE];
 
 //-----------------------------------------------------------------
 // END of File

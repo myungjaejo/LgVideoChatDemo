@@ -54,12 +54,21 @@ typedef struct oContactList {
 
 typedef struct oDeviceID {
 	unsigned char MessageType;
-	char DevID[NAME_BUFSIZE];
+	char FromDevID[NAME_BUFSIZE];
+	char ToDevID[NAME_BUFSIZE];
 }TDeviceID;
+
+typedef struct oAcceptCall {
+	unsigned char MessageType;
+	char FromDevID[NAME_BUFSIZE];
+	char ToDevID[NAME_BUFSIZE];
+	char IPAddress[IP_BUFFSIZE];
+}TAcceptCall;
 
 typedef struct oStatusInfo {
 	unsigned char MessageType;
 	unsigned char status;
+	char myCID[NAME_BUFSIZE];
 }TStatusInfo;
 
 typedef struct oCommandOnly {
