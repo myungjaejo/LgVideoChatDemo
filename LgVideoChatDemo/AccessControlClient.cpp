@@ -411,7 +411,7 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
                 makeContactList(parse, false);
             }
            
-            CreateContactList(NULL);
+            //CreateContactList(NULL);
             std::cout << "make contact list" << std::endl;
         }
 

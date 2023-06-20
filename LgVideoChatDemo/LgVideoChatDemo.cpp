@@ -335,13 +335,14 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 DestroyWindow(hWnd);
                 break;
             case IDM_CALL_REQUET:
-                if (OnConnect(hWnd, message, wParam, lParam))
+                /*if (OnConnect(hWnd, message, wParam, lParam))
                 {
                     SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUET,
                         (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
                     SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_DENY,
                         (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
-                }
+                }*/
+                CreateContactList(hWnd);
                 break;
             case IDM_CALL_DENY:
                 SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUET,
