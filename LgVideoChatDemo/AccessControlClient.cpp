@@ -6,11 +6,14 @@
 #include <ws2tcpip.h>
 #include < cstdlib >
 #include <iostream>
-
 #include "AccessControlClient.h"
 #include "LgVideoChatDemo.h"
 #include "TcpSendRecv.h"
 #include "definition.h"
+#include <openssl/ssl.h>
+
+#pragma comment(lib, "libssl.lib")
+#pragma comment(lib, "libcrypto.lib")
 
 static HANDLE hClientEvent = INVALID_HANDLE_VALUE;
 static HANDLE hEndACClientEvent = INVALID_HANDLE_VALUE;
@@ -28,6 +31,8 @@ char MyEmail[GENERAL_BUFSIZE]{};
 extern bool IsLogin;
 extern char ContactList[MAX_DEVSIZE][GENERAL_BUFSIZE];
 extern HWND hwndCreateRegister, hwndLogin;
+
+SSL* Clientssl;
 
 static void AccessControlClientSetExitEvent(void)
 {
@@ -84,6 +89,24 @@ bool IsACClientRunning(void)
     else return true;
 }
 
+int verify_callback(int preverify_ok, X509_STORE_CTX* ctx)
+{
+    if (preverify_ok == 0)
+    {
+        int depth = X509_STORE_CTX_get_error_depth(ctx);
+        int err = X509_STORE_CTX_get_error(ctx);
+
+        if (depth == 0 && err == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT)
+        {
+            return 1;
+        }
+
+        return 0;
+    }
+
+    return 1;
+}
+
 bool ConnectToACSever(const char* remotehostname, unsigned short remoteport)
 {
     int iResult;
@@ -94,9 +117,22 @@ bool ConnectToACSever(const char* remotehostname, unsigned short remoteport)
     sprintf_s(remoteportno, sizeof(remoteportno), "%d", remoteport);
 
     memset(&hints, 0, sizeof(struct addrinfo));
-    hints.ai_family = AF_UNSPEC;
+    hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
+
+    // Initialize SSL
+    SSL_library_init();
+    SSL_CTX* sslContext = SSL_CTX_new(TLS_client_method());
+
+    if (sslContext == NULL) {
+        printf("Failed to create SSL context.\n");
+        closesocket(Client);
+        WSACleanup();
+        return 1;
+    }
+    SSL_CTX_set_verify(sslContext, SSL_VERIFY_PEER, verify_callback);
+    Clientssl = SSL_new(sslContext);
 
     iResult = getaddrinfo(remotehostname, remoteportno, &hints, &result);
     if (iResult != 0)
@@ -129,8 +165,21 @@ bool ConnectToACSever(const char* remotehostname, unsigned short remoteport)
             std::cout << "closesocket function failed with error :" << WSAGetLastError() << std::endl;
         return false;
     }
-    return true;
+    
+    SSL_set_fd(Clientssl, Client);
 
+    // Perform SSL handshake
+
+    if (SSL_connect(Clientssl) != 1) {
+        printf("SSL handshake failed.\n");
+        SSL_free(Clientssl);
+        closesocket(Client);
+        SSL_CTX_free(sslContext);
+        WSACleanup();
+        return 1;
+    }
+
+    return true;
 }
 
 
@@ -217,11 +266,17 @@ static DWORD WINAPI ThreadACClient(LPVOID ivalue)
                     }
                     else
                     {
-                        int iResult;
-                        sockaddr_in safrom;
+                        int iResult = 0;
+                        sockaddr_in safrom{};
                         int socklen = sizeof(sockaddr_in);
+                        size_t len;
 
-                        iResult = recvfrom(Client, (char*)InputBufferWithOffset, InputBytesNeeded, 0, (sockaddr*)&safrom, &socklen);
+                        iResult = SSL_read_ex(Clientssl, InputBufferWithOffset, InputBytesNeeded, &len);
+
+                        //iResult = SSL_read(Clientssl, InputBufferWithOffset, InputBytesNeeded);
+                        //iResult = recvfrom(Client, (char*)InputBufferWithOffset, InputBytesNeeded, 0, (sockaddr*)&safrom, &socklen);
+
+
                         if (iResult != SOCKET_ERROR)
                         {
                             //std::cout << "AC client recevied : " << InputBufferWithOffset << std::endl;
@@ -289,7 +344,12 @@ static DWORD WINAPI ThreadACClient(LPVOID ivalue)
 
 int sendMsgtoACS(char* data, int len)
 {
-    return send(Client, data, len, 0);
+
+    size_t sent;
+
+    //return send(Client, data, len, 0);
+    //return SSL_write(Clientssl, data, len);
+    return SSL_write_ex(Clientssl, data, len, &sent);
 }
 
 

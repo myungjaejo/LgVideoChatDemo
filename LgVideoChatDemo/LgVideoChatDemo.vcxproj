@@ -266,7 +266,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AccessControlClient.cpp" />
-    <ClCompile Include="AccessControlServer.cpp" />
     <ClCompile Include="AecKsBinder.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="ContactList.cpp" />

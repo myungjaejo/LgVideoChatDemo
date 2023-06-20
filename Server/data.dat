@@ -1,0 +1,26 @@
+[
+	{
+		"address" : "",
+		"contactID" : "aaa@aaa.com",
+		"email" : "aaa@aaa.com",
+		"firstName" : "",
+		"lastName" : "",
+		"password" : "A59CE44D5341ED619ABD5C67723BFBE1CB9F6ED7FFB0245D55D0FA3B04094712"
+	},
+	{
+		"address" : "",
+		"contactID" : "bbb@bbb.com",
+		"email" : "bbb@bbb.com",
+		"firstName" : "",
+		"lastName" : "",
+		"password" : "A317BC8A772A946B006C6964357277852B22659AC9DD40DC026852F609FE6191"
+	},
+	{
+		"address" : "",
+		"contactID" : "ccc@ccc.com",
+		"email" : "ccc@ccc.com",
+		"firstName" : "",
+		"lastName" : "",
+		"password" : "61308CF0BF7FFB29299CD45EBF88E00A3439C5611D1826AC20888C49F635E496"
+	}
+]

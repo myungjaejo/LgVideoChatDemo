@@ -1,0 +1,17 @@
+﻿cl : 명령줄  warning D9035: 'Gm' 옵션은 더 이상 사용되지 않으므로 이후 릴리스에서 제거될 예정입니다.
+  jsoncpp.cpp
+AccessControlServer.obj : warning LNK4075: '/EDITANDCONTINUE'이(가) '/SAFESEH' 사양으로 인해 무시됩니다.
+AccessControlServer.obj : error LNK2019: _SSL_CTX_new"unsigned long __stdcall ThreadACServer(void *)" (?ThreadACServer@@YGKPAX@Z) 함수에서 참조되는 확인할 수 없는 외부 기호
+AccessControlServer.obj : error LNK2019: _SSL_set_fd"unsigned long __stdcall ThreadACServer(void *)" (?ThreadACServer@@YGKPAX@Z) 함수에서 참조되는 확인할 수 없는 외부 기호
+AccessControlServer.obj : error LNK2019: _SSL_CTX_use_PrivateKey_file"unsigned long __stdcall ThreadACServer(void *)" (?ThreadACServer@@YGKPAX@Z) 함수에서 참조되는 확인할 수 없는 외부 기호
+AccessControlServer.obj : error LNK2019: _SSL_CTX_use_certificate_file"unsigned long __stdcall ThreadACServer(void *)" (?ThreadACServer@@YGKPAX@Z) 함수에서 참조되는 확인할 수 없는 외부 기호
+AccessControlServer.obj : error LNK2019: _SSL_new"unsigned long __stdcall ThreadACServer(void *)" (?ThreadACServer@@YGKPAX@Z) 함수에서 참조되는 확인할 수 없는 외부 기호
+AccessControlServer.obj : error LNK2019: _SSL_accept"unsigned long __stdcall ThreadACServer(void *)" (?ThreadACServer@@YGKPAX@Z) 함수에서 참조되는 확인할 수 없는 외부 기호
+AccessControlServer.obj : error LNK2019: _SSL_read"unsigned long __stdcall ThreadACServer(void *)" (?ThreadACServer@@YGKPAX@Z) 함수에서 참조되는 확인할 수 없는 외부 기호
+AccessControlServer.obj : error LNK2019: _SSL_write"int __cdecl RecvHandler(unsigned int,char *,int,struct sockaddr_in,int)" (?RecvHandler@@YAHIPADHUsockaddr_in@@H@Z) 함수에서 참조되는 확인할 수 없는 외부 기호
+AccessControlServer.obj : error LNK2019: _TLS_server_method"unsigned long __stdcall ThreadACServer(void *)" (?ThreadACServer@@YGKPAX@Z) 함수에서 참조되는 확인할 수 없는 외부 기호
+AccessControlServer.obj : error LNK2019: _OPENSSL_init_ssl"unsigned long __stdcall ThreadACServer(void *)" (?ThreadACServer@@YGKPAX@Z) 함수에서 참조되는 확인할 수 없는 외부 기호
+AccessControlServer.obj : error LNK2001: 확인할 수 없는 외부 기호 "struct HWND__ * hWndMain" (?hWndMain@@3PAUHWND__@@A)
+..\built-libs\\libssl.lib : warning LNK4272: 'x64' 라이브러리 컴퓨터 종류가 'x86' 대상 컴퓨터 종류와 충돌합니다.
+..\built-libs\\libcrypto.lib : warning LNK4272: 'x64' 라이브러리 컴퓨터 종류가 'x86' 대상 컴퓨터 종류와 충돌합니다.
+Debug\Server.exe : fatal error LNK1120: 11개의 확인할 수 없는 외부 참조입니다.

@@ -24,7 +24,6 @@ static HANDLE hTimer = INVALID_HANDLE_VALUE;
 static SOCKET Listener = INVALID_SOCKET;
 static SOCKET Accepter = INVALID_SOCKET;
 
-static bool Loopback = false;
 
 static DWORD ThreadACServerID;
 static int NumEvents;
@@ -39,7 +38,7 @@ bool RegistrationUserData(TRegistration* data);
 SSL* ssl;
 
 // start Server
-bool StartACServer(bool &Loopback)
+bool StartACServer()
 {
 	if (hThreadACServer == INVALID_HANDLE_VALUE)
 	{
@@ -108,6 +107,7 @@ static void CloseConnection(void)
 	{
 		closesocket(Accepter);
 		Accepter = INVALID_SOCKET;
+		
 	}
 	NumEvents = 2;
 }
@@ -119,14 +119,17 @@ int verify_callback(int preverify_ok, X509_STORE_CTX* ctx)
 		int depth = X509_STORE_CTX_get_error_depth(ctx);
 		int err = X509_STORE_CTX_get_error(ctx);
 
+		// Self-signed 인증서 검증 오류를 허용하기 위해 항상 성공으로 처리
 		if (depth == 0 && err == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT)
 		{
 			return 1;
 		}
 
+		// 다른 인증서 검증 오류가 발생한 경우에는 실패로 처리
 		return 0;
 	}
 
+	// 인증서 검증이 성공한 경우에는 성공으로 처리
 	return 1;
 }
 
@@ -173,7 +176,6 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 	if ((Listener = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET)
 	{
 		std::cout << "socket() failed with error " << WSAGetLastError() << std::endl;
-		return 1;
 	}
 
 	// create Events handles
@@ -294,6 +296,7 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 							// Accept a new connection, and add it to the socket and event lists
 							Accepter = accept(Listener, (struct sockaddr*)&sa, &sa_len);
 
+							// SSL 소켓 생성
 							ssl = SSL_new(sslContext);
 
 							if (ssl == NULL)
@@ -302,12 +305,14 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 								return 1;
 							}
 
+							// 소켓과 SSL 바인딩
 							if (SSL_set_fd(ssl, Accepter) != 1)
 							{
 								fprintf(stderr, "Failed to bind SSL socket.\n");
 								return 1;
 							}
 
+							// SSL 핸드셰이크 수행
 							int result = SSL_accept(ssl);
 							if (result != 1)
 							{
@@ -355,6 +360,7 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 								std::cout << "Refused-Already Connected" << std::endl;
 							}
 
+							// SSL 소켓 생성
 							ssl = SSL_new(sslContext);
 							if (ssl == NULL)
 							{
@@ -362,12 +368,14 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 								return 1;
 							}
 
+							// 소켓과 SSL 바인딩
 							if (SSL_set_fd(ssl, Temp) != 1)
 							{
 								fprintf(stderr, "Failed to bind SSL socket.\n");
 								return 1;
 							}
 
+							// SSL 핸드셰이크 수행
 							int result = SSL_accept(ssl);
 							if (result != 1)
 							{
@@ -765,7 +773,8 @@ int _tmain(int argc, _TCHAR* argv[])
 		return 1;
 	}
 
-	StartACServer(Loopback);
+
+	StartACServer();
 
 	printf("Server Runnning\n");
 	SuspendThread(GetCurrentThread());

@@ -1,0 +1,42 @@
+[
+	{
+		"address" : "",
+		"contactID" : "ccc@ccc.com",
+		"email" : "ccc@ccc.com",
+		"firstName" : "",
+		"lastName" : "",
+		"password" : "61308CF0BF7FFB29299CD45EBF88E00A3439C5611D1826AC20888C49F635E496"
+	},
+	{
+		"address" : "",
+		"contactID" : "ddd",
+		"email" : "ddd@ddd.com",
+		"firstName" : "",
+		"lastName" : "",
+		"password" : "DD941BEA3AF3AF3836163306002865556010CE59657A76667BEDEB53FEC9E473"
+	},
+	{
+		"address" : "",
+		"contactID" : "aaa@aaa.com",
+		"email" : "aaa@aaa.com",
+		"firstName" : "",
+		"lastName" : "",
+		"password" : "A59CE44D5341ED619ABD5C67723BFBE1CB9F6ED7FFB0245D55D0FA3B04094712"
+	},
+	{
+		"address" : "",
+		"contactID" : "bbb@bbb.com",
+		"email" : "bbb@bbb.com",
+		"firstName" : "",
+		"lastName" : "",
+		"password" : "A317BC8A772A946B006C6964357277852B22659AC9DD40DC026852F609FE6191"
+	},
+	{
+		"address" : "",
+		"contactID" : "eee@eee.com",
+		"email" : "eee@eee.com",
+		"firstName" : "",
+		"lastName" : "",
+		"password" : "5254983AB46A5A4A7A068A7881D304E54668646844F10B0CD714427D2067E8E3"
+	}
+]

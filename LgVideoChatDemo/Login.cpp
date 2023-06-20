@@ -168,14 +168,14 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     }
 
                     char PasswdChar[GENERAL_BUFSIZE] = { 0, };
-                    char PasswdHash[65] = { 0, };
                     size_t len = _tcslen(Passwd);
 
                     CopyTCharToChar(Passwd, PasswdChar, len);
 
+                    char PasswdHash[65] = { 0, };
                     //SHA256Hash(Passwd, len, PasswdHash);
                     SHA256Hash((const char *)PasswdChar, len, PasswdHash);
-                    std::cout << "SHA-256 : " << PasswdChar << std::endl;
+                    std::cout << "SHA-256 : " << PasswdHash << std::endl;
 
                     TLogin login{};
                     login.MessageType = (char)Login;

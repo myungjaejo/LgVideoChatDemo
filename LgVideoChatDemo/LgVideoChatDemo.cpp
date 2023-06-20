@@ -352,7 +352,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 //EnableWindow(GetDlgItem(hWnd, IDC_CHECKBOX_AEC), false);
                 //EnableWindow(GetDlgItem(hWnd, IDC_CHECKBOX_NS), false);
                 //OnStartServer(hWnd, message, wParam, lParam);
-                StartACServer(Loopback);
+                //StartACServer(Loopback);
                 break;
             case IDM_STOP_SERVER:
                 SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_START_SERVER,
@@ -363,10 +363,10 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 //EnableWindow(GetDlgItem(hWnd, IDC_CHECKBOX_AEC), true);
                 //EnableWindow(GetDlgItem(hWnd, IDC_CHECKBOX_NS), true);
                 //OnStopServer(hWnd, message, wParam, lParam);
-                StopACServer();
+                //StopACServer();
                 break;
             case IDM_LOGIN:
-                StartACServer(Loopback);
+                //StartACServer(Loopback);
                 OnConnectACS(hWnd, message, wParam, lParam);
                 LoginCreateForm(hWnd);
                 break;
