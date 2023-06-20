@@ -433,7 +433,7 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
         if (devStatus == Caller)
         {
             // OnConnect(tmp->IPAddress);
-            PostMessage(hWndMain, WM_OPEN_VIDEOCLIENT, 0, 0);
+            PostMessage(hWndMain, WM_OPEN_VIDEOCLIENT, 0, (LPARAM)tmp->IPAddress);
             devStatus = Calling;
         }
 

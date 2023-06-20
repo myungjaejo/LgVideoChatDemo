@@ -654,20 +654,22 @@ LRESULT OnSize(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 static int OnConnect(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    CStringW cstring(RemoteAddress);
+    //CStringW cstring(RemoteAddress);
 
-    PRINT(_T("Remote Address : %s Loopback %s\r\n"), cstring, Loopback ? _T("True"): _T("False"));
+    //PRINT(_T("Remote Address : %s Loopback %s\r\n"), cstring, Loopback ? _T("True"): _T("False"));
+    char IPAddr[128];
+    strcpy_s(IPAddr, (char*)lParam);
  
     if (!IsVideoClientRunning())
     {
         if (OpenCamera())
         {
-            if (ConnectToSever(RemoteAddress, VIDEO_PORT))
+            if (ConnectToSever(IPAddr, VIDEO_PORT))
             {
                 std::cout << "Connected to Server" << std::endl;
                 StartVideoClient();
                 std::cout << "Video Client Started.." << std::endl;
-                VoipVoiceStart(RemoteAddress, VOIP_LOCAL_PORT, VOIP_REMOTE_PORT, VoipAttr);
+                VoipVoiceStart(IPAddr, VOIP_LOCAL_PORT, VOIP_REMOTE_PORT, VoipAttr);
                 std::cout << "Voip Voice Started.." << std::endl;
                 return 1;
             }
