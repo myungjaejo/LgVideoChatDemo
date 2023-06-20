@@ -542,30 +542,13 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 						{
 							std::cout << "transfer request : " << msg.FromDevID << " -> " << msg.ToDevID << " / " << (*iitt).IPAddr << std::endl;
 							int ret = send((*iitt).ASocket, (char*)&msg, sizeof(msg), 0);
-							//int ret = send(__InputSock, (char*)&msg, sizeof(msg), 0);
 							std::cout << (*iitt).ASocket << ", " << ret << std::endl;
-							//sockaddr_in sockTo;
-							//int ss = sizeof(sockaddr_in);
-							//sockTo.sin_family = AF_INET;
-							//inet_pton(AF_INET, (*iitt).IPAddr, &sockTo.sin_addr.s_addr);
-							//sockTo.sin_port = htons(ACS_PORT);
-
-							//sendto((*iitt).ASocket, (char*)&msg, sizeof(msg), 0, (sockaddr*)&sockTo, ss);
 							break;
 						}
 					}
-
-					/*sockaddr_in sockTo;
-					int ss = sizeof(sockaddr_in);
-					sockTo.sin_family = AF_INET;
-					inet_pton(AF_INET, (*iter)->LastIPAddress, &sockTo.sin_addr.s_addr);
-					sockTo.sin_port = htons(ACS_PORT);
-
-					sendto(__InputSock, (char *)&msg, sizeof(msg), 0, (sockaddr *)&sockTo, ss);*/
 				}
 			}
-			 
-			// sendto(Accepter, (char*)tmp, sizeof(TDeviceID), 0, 0, << sockaddr_forward >> , << sockaddr_len >> );
+
 			break;
 		}
 		case AcceptCall:
@@ -578,24 +561,21 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 			TAcceptCall msg{};
 			msg.MessageType = AcceptCall;
 
-			std::vector<TRegistration*>::iterator iter;
-			for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
+			std::vector<TSocketManager>::iterator iter;
+			for (iter = sockmng.begin(); iter != sockmng.end(); iter++)
 			{
-				if (!strncmp(fromDev, (*iter)->ContactID, NAME_BUFSIZE))
+				if (!strncmp(fromDev, (*iter).Owner, NAME_BUFSIZE))
 				{
-					strcpy_s(msg.IPAddress, (*iter)->LastIPAddress);
+					strcpy_s(msg.FromDevID, fromDev);
+					strcpy_s(msg.ToDevID, dev_id);
+					strcpy_s(msg.IPAddress, (*iter).IPAddr);
+					
+					send((*iter).ASocket, (char*)&msg, sizeof(msg), 0);
+					std::cout << "Accept call : " << msg.FromDevID << " -> " << msg.ToDevID << " / " << msg.IPAddress << std::endl;
 					break;
 				}
 			}
-			sockaddr_in sockto;
-			int iResult = findReceiverIP(msg.ToDevID, &sockto);
-			if (iResult != 0)
-			{
-				strcpy_s(msg.FromDevID, fromDev);
-				strcpy_s(msg.ToDevID, dev_id);
-
-				sendto(__InputSock, (char*)&msg, sizeof(msg), 0, (sockaddr*)&sockto, iResult);
-			}			
+			
 			break;
 		}
 		case RejectCall:

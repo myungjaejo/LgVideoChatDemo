@@ -416,44 +416,31 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
             std::cout << "make contact list" << std::endl;
         }
 
-        // send contact list
-        // TContactList *clist = (TContactList *)std::malloc(sizeof(TContactList));
-        // clist->MessageType = SendContactList
-        // for i in range(Sizeof stored clist)
-        //		(clist->DevID).append(stored_clist[i])
-        // sendto(Accepter, (char *)clist, sizeof(TContactList), 0, 0, <<sockaddr>>, <<sockaddr_len>>);
-
         break;
     }
     case RequestCall:
     {
         TDeviceID* tmp = (TDeviceID*)data;
         PostMessage(hWndMain, WM_OPEN_CALLREQUEST, 0, (LPARAM)tmp->FromDevID);
-        // CreateCallNotification(NULL, tmp->FromDevID);
-        // char* dev_id = tmp->DevID;
-        // std::cout << dev_id << std::endl;
-        // Load stored IP_addres of Receiver 
-        // sendto(Accepter, (char*)tmp, sizeof(TDeviceID), 0, 0, << sockaddr_forward >> , << sockaddr_len >> );
+
         break;
     }
     case AcceptCall:
     {
         TAcceptCall* tmp = (TAcceptCall*)data;
 
+        std::cout << "make a call - status(" << int(devStatus) << ")" << std::endl;
         if (devStatus == Caller)
         {
             OnConnect(tmp->IPAddress);
             devStatus = Calling;
         }
-        /*TDeviceID* msg = (TDeviceID*)data;
-        tmp->FromDevID*/
+
         break;
     }
     case RejectCall:
     {
-        TDeviceID* tmp = (TDeviceID*)data;
-        // char* dev_id = tmp->DevID;
-        // std::cout << dev_id << std::endl;
+        //TDeviceID* tmp = (TDeviceID*)data;
         devStatus = Connected;
         break;
     }

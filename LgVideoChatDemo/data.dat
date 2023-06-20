@@ -1,26 +1,22 @@
 [
 	{
-		"address" : "123123",
-		"contactID" : "aabb",
-		"email" : "hyoill.leem@lginnotek.com",
-		"firstName" : "Leem",
-		"lastName" : "hyoill",
-		"password" : "B33A2F448E942DDB6CBE69EAC6EB32E912EDDD812EBFDDC823DBB8CACD93D3A8"
+		"IP" : "192.168.68.106",
+		"address" : "",
+		"contactID" : "cat",
+		"email" : "cat@cmu.edu",
+		"firstName" : "cat",
+		"lastAccess" : "Tue Jun 20 16:03:43 2023\n",
+		"lastName" : "",
+		"password" : "B61EBFFD47B67A399358AB803D3411BF353A53C9EEA8AF0BFA08732EC39EECB9"
 	},
 	{
+		"IP" : "192.168.68.105",
 		"address" : "",
-		"contactID" : "aabb",
-		"email" : "aaa@aaa.com",
+		"contactID" : "alice",
+		"email" : "alice@cmu.edu",
 		"firstName" : "",
+		"lastAccess" : "Tue Jun 20 16:04:34 2023\n",
 		"lastName" : "",
-		"password" : "1AB218F6A8C4121BE86FD8B82152B0C6123A9352E81E2CE563C208FE7E68CC2B"
-	},
-	{
-		"address" : "",
-		"contactID" : "bb",
-		"email" : "bbb@bbb.com",
-		"firstName" : "",
-		"lastName" : "",
-		"password" : "6AB4108F22B149EAAACDDF09493B585B95865A13B97A14EB4488A35249051F2A"
+		"password" : "032FF7A0CCDD957511F6500D16AAD29FABB8EEF396955B369E56DCEE8F7D585A"
 	}
 ]
