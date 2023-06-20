@@ -2,4 +2,4 @@
 #include <wtypes.h>
 
 int CreateContactList(HWND parentHwnd);
-void makeContactList(char* contactID);
+void makeContactList(char* contactID, bool first);

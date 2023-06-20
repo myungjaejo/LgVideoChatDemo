@@ -90,7 +90,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                             SendMessage(hComboBox, CB_GETLBTEXT, selectedIndex, (LPARAM)selectedText);
 
                             // 선택된 항목 출력
-                            MessageBox(hwnd, selectedText, L"Selected Item", MB_OK);
+                            //MessageBox(hwnd, selectedText, L"Selected Item", MB_OK);
 
                             // call request
                             char* outbuf = (char*)std::malloc(sizeof(char) * NAME_BUFSIZE);
@@ -102,9 +102,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                             //int nLength = WideCharToMultiByte(CP_ACP, 0, target, -1, NULL, 0, NULL, NULL);
                             //char* outbuf = (char*)std::malloc(sizeof(char) * NAME_BUFSIZE);
                             //WideCharToMultiByte(CP_ACP, 0, selectedText, -1, outbuf, NAME_BUFSIZE, NULL, NULL);
-                            strcpy_s(msg.ToDevID, NAME_BUFSIZE, outbuf);
+                            strcpy_s(msg.ToDevID, outbuf);
                             strcpy_s(msg.FromDevID, MyID);
                             sendMsgtoACS((char*)&msg, sizeof(msg));
+
+                            DestroyWindow(hwnd);
                         }
                     }
                 }
@@ -150,8 +152,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-void makeContactList(char* contactID)
+void makeContactList(char* contactID, bool first = false)
 {
+    if (first)
+        ContactList.clear();
     ContactList.push_back(contactID);
     //char* cid = (char*)std::malloc(sizeof(char)*128);
     //if (cid != NULL)

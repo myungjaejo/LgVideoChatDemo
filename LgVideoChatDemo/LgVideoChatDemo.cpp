@@ -75,6 +75,7 @@ static HWND hWndEdit;
 
 TStatus devStatus = Disconnected;
 char MyID[NAME_BUFSIZE];
+CRITICAL_SECTION CriticalSect;
 
 // Forward declarations of functions included in this code module:
 static ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -385,11 +386,11 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 break;
             case IDM_LOGIN:
                 // StartACServer(Loopback);
-                OnConnectACS(hWnd, message, wParam, lParam);
-                LoginCreateForm(hWnd);
-        /*        devStatus = Server;
+                //OnConnectACS(hWnd, message, wParam, lParam);
+                //LoginCreateForm(hWnd);
+                devStatus = Server;
                 SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_START_SERVER,
-                    (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));*/
+                    (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
                 break;
             case IDM_CONTACTLIST:
                 CreateContactList(hWnd);

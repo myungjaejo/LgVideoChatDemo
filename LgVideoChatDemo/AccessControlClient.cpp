@@ -203,6 +203,7 @@ static DWORD WINAPI ThreadACClient(LPVOID ivalue)
             break;
         else if (dwEvent == WAIT_OBJECT_0 + 1)
         {
+            WSAResetEvent(hClientEvent);
             WSANETWORKEVENTS NetworkEvents;
             if (SOCKET_ERROR == WSAEnumNetworkEvents(Client, hClientEvent, &NetworkEvents))
             {
@@ -227,7 +228,9 @@ static DWORD WINAPI ThreadACClient(LPVOID ivalue)
                         if (iResult != SOCKET_ERROR)
                         {
                             //std::cout << "AC client recevied : " << InputBufferWithOffset << std::endl;
+                            EnterCriticalSection(&CriticalSect);
                             RecvHandler(Client, InputBufferWithOffset, iResult, safrom, socklen);
+                            LeaveCriticalSection(&CriticalSect);
                         }
                         else 
                             std::cout << "ReadDataTcpNoBlock buff failed " << WSAGetLastError() << std::endl;
@@ -400,14 +403,14 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
             std::cout << "You're Only User in this System" << std::endl;
         }
         else
-        {            
+        {   
             char* buf;
             char* parse = strtok_s(clist->ListBuf, "/", &buf);
-            makeContactList(parse);
+            makeContactList(parse, true);
             for (int i = 1; i < size; i++)
             {
                 parse = strtok_s(NULL, "/", &buf);
-                makeContactList(parse);
+                makeContactList(parse, false);
             }
            
             CreateContactList(NULL);

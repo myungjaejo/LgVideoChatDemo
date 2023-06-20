@@ -101,6 +101,7 @@ LRESULT CALLBACK RegisterProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
                     sendMsgtoACS((char *)msg, sizeof(TRegistration));
                     free(msg);
+                    DestroyWindow(hwnd);
                 }
                 else
                 {

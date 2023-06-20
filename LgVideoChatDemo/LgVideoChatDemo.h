@@ -25,6 +25,7 @@ extern char LocalIpAddress[512];
 extern TStatus devStatus;
 extern HWND hWndMainToolbar;
 extern char MyID[NAME_BUFSIZE];
+extern CRITICAL_SECTION CriticalSect;
 
 //-----------------------------------------------------------------
 // END of File
