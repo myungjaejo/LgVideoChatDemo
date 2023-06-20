@@ -25,6 +25,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\LgVideoChatDemo\AccessControlClient.h" />
+    <ClInclude Include="..\LgVideoChatDemo\definition.h" />
     <ClInclude Include="..\LgVideoChatDemo\filemanager.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

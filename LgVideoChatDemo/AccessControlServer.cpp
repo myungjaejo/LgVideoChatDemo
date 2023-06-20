@@ -478,10 +478,10 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 	return 0;
 }
 
-void ResetAttempt(LPVOID lpArgToCompletionRoutine, DWORD dwTimerLowValue, DWORD dwTimerHighValue)
+VOID CALLBACK ResetLoginAttempt(PVOID lpParameter, BOOLEAN TimerOrWaitFired)
 {
 	printf("reset attempt count\n");
-	TRegistration* user = (TRegistration*)lpArgToCompletionRoutine;
+	TRegistration* user = (TRegistration*)lpParameter;
 	user->LoginAttempt = 0;
 }
 
@@ -576,17 +576,18 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 
 						if (user->LoginAttempt == MAX_ALLOW_LOGIN_ATTEMPT)
 						{
-							HANDLE hTimer = CreateWaitableTimer(NULL, FALSE, NULL);
+							HANDLE hTimer = NULL;
+							HANDLE hTimerQueue = CreateTimerQueue();
 
-							if (!hTimer) {
-								printf("hTimer is null\n");
+							if (!hTimerQueue) {
+								printf("hTimerQueue is null\n");
 								break;
 							}
 
-							LARGE_INTEGER dueTime;
-							dueTime.QuadPart = -10000000000;
-							//SetWaitableTimer(hTimer, &dueTime, 0, ResetAttempt, (LPVOID)(user), FALSE);
-							DWORD result = WaitForSingleObject(hTimer, INFINITE);
+							if (!CreateTimerQueueTimer(&hTimer, hTimerQueue, ResetLoginAttempt, user, 3600000, 0, 0)) {
+								printf("hTimerQueue is null\n");
+								break;
+							}
 						}
 						break;
 					}

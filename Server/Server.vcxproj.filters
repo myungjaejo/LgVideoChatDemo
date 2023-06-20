@@ -32,5 +32,8 @@
     <ClInclude Include="..\LgVideoChatDemo\filemanager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\LgVideoChatDemo\definition.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
