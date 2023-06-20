@@ -468,6 +468,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         break;
 
     case WM_OPEN_VIDEOSERVER:
+        EnableWindow(GetDlgItem(hWnd, IDC_CHECKBOX_LOOPBACK), false);
         OnStartServer(hWnd, message, wParam, lParam);
         break;
     case WM_OPEN_VIDEOCLIENT:

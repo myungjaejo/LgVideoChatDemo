@@ -99,6 +99,7 @@ LRESULT CALLBACK WindowNCProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
             strcpy_s(msg->ToDevID, callMsg);
             sendMsgtoACS((char*)msg, sizeof(TDeviceID));
             free(msg);
+            DestroyWindow(hwnd);
         }
         case BUTTON_DENY:
         {
@@ -109,6 +110,7 @@ LRESULT CALLBACK WindowNCProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
             strcpy_s(msg->ToDevID, callMsg);
             sendMsgtoACS((char*)msg, sizeof(TDeviceID));
             free(msg);
+            DestroyWindow(hwnd);
         }
         }
     }
