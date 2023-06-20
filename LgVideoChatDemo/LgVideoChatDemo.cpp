@@ -385,11 +385,11 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 break;
             case IDM_LOGIN:
                 // StartACServer(Loopback);
-                OnConnectACS(hWnd, message, wParam, lParam);
-                LoginCreateForm(hWnd);
-                //devStatus = Server;
-                //SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_START_SERVER,
-                //    (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
+                //OnConnectACS(hWnd, message, wParam, lParam);
+                //LoginCreateForm(hWnd);
+                devStatus = Server;
+                SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_START_SERVER,
+                    (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
                 break;
             case IDM_CONTACTLIST:
                 CreateContactList(hWnd);
@@ -466,6 +466,14 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     case WM_OPEN_CALLREQUEST:
         CreateCallNotification(hWnd, (char*)lParam);
         break;
+
+    case WM_OPEN_VIDEOSERVER:
+        OnStartServer(hWnd, message, wParam, lParam);
+        break;
+    case WM_OPEN_VIDEOCLIENT:
+        OnConnect(hWnd, message, wParam, lParam);
+        break;
+
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
     }

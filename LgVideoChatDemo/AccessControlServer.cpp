@@ -564,7 +564,7 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 			std::vector<TSocketManager>::iterator iter;
 			for (iter = sockmng.begin(); iter != sockmng.end(); iter++)
 			{
-				if (!strncmp(fromDev, (*iter).Owner, NAME_BUFSIZE))
+				if (!strncmp(dev_id, (*iter).Owner, NAME_BUFSIZE))
 				{
 					strcpy_s(msg.FromDevID, fromDev);
 					strcpy_s(msg.ToDevID, dev_id);

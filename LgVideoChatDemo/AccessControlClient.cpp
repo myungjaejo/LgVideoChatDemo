@@ -432,7 +432,8 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
         std::cout << "make a call - status(" << int(devStatus) << ")" << std::endl;
         if (devStatus == Caller)
         {
-            OnConnect(tmp->IPAddress);
+            // OnConnect(tmp->IPAddress);
+            PostMessage(hWndMain, WM_OPEN_VIDEOCLIENT, 0, 0);
             devStatus = Calling;
         }
 

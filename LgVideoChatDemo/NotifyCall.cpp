@@ -89,7 +89,8 @@ LRESULT CALLBACK WindowNCProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
             //Server open
             devStatus = Callee;
             bool loopback = false;
-            StartVideoServer(loopback);
+            //StartVideoServer(loopback);
+            PostMessage(hWndMain, WM_OPEN_VIDEOSERVER, 0, 0);
 
             //send msg
             TDeviceID* msg = (TDeviceID*)std::malloc(sizeof(TDeviceID));
