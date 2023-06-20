@@ -9,6 +9,9 @@
 #define WM_REMOTE_LOST         WM_USER+3
 #define WM_VAD_STATE           WM_USER+4
 
+#define WM_OPEN_CONTACTLIST	   WM_USER+6
+#define WM_OPEN_CALLREQUEST	   WM_USER+7
+
 #define VIDEO_PORT       10000
 #define VOIP_LOCAL_PORT  10001
 #define VOIP_REMOTE_PORT 10001

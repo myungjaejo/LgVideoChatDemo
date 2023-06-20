@@ -412,6 +412,7 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
             }
            
             //CreateContactList(NULL);
+            PostMessage(hWndMain, WM_OPEN_CONTACTLIST, 0, 0);
             std::cout << "make contact list" << std::endl;
         }
 
@@ -427,7 +428,8 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
     case RequestCall:
     {
         TDeviceID* tmp = (TDeviceID*)data;
-        CreateCallNotification(NULL, tmp->FromDevID);
+        PostMessage(hWndMain, WM_OPEN_CALLREQUEST, 0, (LPARAM)tmp->FromDevID);
+        // CreateCallNotification(NULL, tmp->FromDevID);
         // char* dev_id = tmp->DevID;
         // std::cout << dev_id << std::endl;
         // Load stored IP_addres of Receiver 

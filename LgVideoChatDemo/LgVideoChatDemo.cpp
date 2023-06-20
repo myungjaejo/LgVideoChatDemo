@@ -26,8 +26,6 @@
 #include "ContactList.h"
 #include "NotifyCall.h"
 
-
-
 #pragma comment(lib,"comctl32.lib")
 #ifdef _DEBUG
 #pragma comment(lib,"..\\..\\opencv\\build\\x64\\vc16\\lib\\opencv_world470d.lib")
@@ -389,9 +387,9 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 // StartACServer(Loopback);
                 OnConnectACS(hWnd, message, wParam, lParam);
                 LoginCreateForm(hWnd);
-                /*devStatus = Server;
-                SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_START_SERVER,
-                    (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));*/
+                //devStatus = Server;
+                //SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_START_SERVER,
+                //    (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
                 break;
             case IDM_CONTACTLIST:
                 CreateContactList(hWnd);
@@ -462,7 +460,12 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
           }
         }
         break;
-
+    case WM_OPEN_CONTACTLIST:
+        CreateContactList(hWnd);
+        break;
+    case WM_OPEN_CALLREQUEST:
+        CreateCallNotification(hWnd, (char*)lParam);
+        break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
     }

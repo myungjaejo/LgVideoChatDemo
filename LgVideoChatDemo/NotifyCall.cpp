@@ -16,11 +16,11 @@ LRESULT CALLBACK WindowNCProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 
 int WINAPI CreateCallNotification(HWND Phwnd, const char* CallFrom)
 {
-    //if (devStatus == Disconnected)
-    //{
-    //    MessageBox(NULL, L"Please Login First", L"Error", MB_OK | MB_ICONERROR);
-    //    return 1;
-    //}
+    if (devStatus == Disconnected)
+    {
+        MessageBox(NULL, L"Please Login First", L"Error", MB_OK | MB_ICONERROR);
+        return 1;
+    }
     // 윈도우 클래스 등록
     WNDCLASS wc = { 0 };
     wc.lpfnWndProc = WindowNCProc;

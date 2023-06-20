@@ -35,7 +35,7 @@ int WINAPI CreateContactList(HWND Phwnd)
 
     // 윈도우 생성
     hwnd = CreateWindowEx(0, L"MainWindowClass", L"Contact List", WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT, 400, 300, NULL, NULL, wc.hInstance, NULL);
+        CW_USEDEFAULT, CW_USEDEFAULT, 400, 300, Phwnd, NULL, wc.hInstance, NULL);
 
     if (hwnd == NULL)
     {
