@@ -29,7 +29,15 @@ static SOCKET Accepter = INVALID_SOCKET;
 static DWORD ThreadACServerID;
 static int NumEvents;
 
+typedef struct oSocketManager {
+	char	IPAddr[IP_BUFFSIZE];
+	char	Owner[NAME_BUFSIZE];
+	SOCKET	ASocket;
+	HANDLE	AcceptEvent;
+}TSocketManager;
+
 static std::vector<TRegistration *> controlDevices;
+static std::vector<TSocketManager> sockmng;
 
 static void CleanUpACServer(void);
 static DWORD WINAPI ThreadACServer(LPVOID ivalue);
@@ -106,19 +114,21 @@ static void CleanUpACServer(void)
 		Accepter = INVALID_SOCKET;
 	}
 
+	sockmng.clear();
+
 	RegistrationToFile();
 	controlDevices.clear();
 }
 
-static void CloseConnection(void)
+static void CloseConnection(SOCKET __InputSock)
 {
-	if (Accepter != INVALID_SOCKET)
+	if (__InputSock != INVALID_SOCKET)
 	{
-		closesocket(Accepter);
-		Accepter = INVALID_SOCKET;
+		closesocket(__InputSock);
+		__InputSock = INVALID_SOCKET;
 		PostMessage(hWndMain, WM_REMOTE_LOST, 0, 0);
 	}
-	NumEvents = 2;
+	NumEvents -= 1;
 }
 
 static DWORD WINAPI ThreadACServer(LPVOID ivalue)
@@ -218,8 +228,11 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 					}
 					else
 					{
-						if (Accepter == INVALID_SOCKET)
-						{
+						//if (sockmng.size() == 0); //if (Accepter == INVALID_SOCKET)
+						//{
+							std::cout << "Try Accepted Connection " << std::endl;
+							TSocketManager tmp{};
+
 							struct sockaddr_storage sa;
 							socklen_t sa_len = sizeof(sa);
 							char RemoteIp[INET6_ADDRSTRLEN];
@@ -227,7 +240,7 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 							LARGE_INTEGER liDueTime;
 
 							// Accept a new connection, and add it to the socket and event lists
-							Accepter = accept(Listener, (struct sockaddr*)&sa, &sa_len);
+							tmp.ASocket = accept(Listener, (struct sockaddr*)&sa, &sa_len);
 
 							int err = getnameinfo((struct sockaddr*)&sa, sa_len, RemoteIp, sizeof(RemoteIp), 0, 0, NI_NUMERICHOST);
 							if (err != 0) {
@@ -236,13 +249,17 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 							else
 							{
 								std::cout << "Accepted Connection " << RemoteIp << std::endl;
+								strcpy_s(tmp.IPAddr, RemoteIp);
 							}
 
 							PostMessage(hWndMain, WM_REMOTE_CONNECT, 0, 0);
-							hAccepterEvent = WSACreateEvent();
-							WSAEventSelect(Accepter, hAccepterEvent, FD_READ | FD_WRITE | FD_CLOSE);
-							ghEvents[2] = hAccepterEvent;
-							NumEvents = 3;
+							//hAccepterEvent = WSACreateEvent();
+							tmp.AcceptEvent = WSACreateEvent();
+							//WSAEventSelect(Accepter, hAccepterEvent, FD_READ | FD_WRITE | FD_CLOSE);
+							WSAEventSelect(tmp.ASocket, tmp.AcceptEvent, FD_READ | FD_WRITE | FD_CLOSE);							
+							ghEvents[NumEvents] = tmp.AcceptEvent;
+							sockmng.push_back(tmp);
+							NumEvents += 1;
 							/*
 							hTimer = CreateWaitableTimer(NULL, FALSE, NULL);
 							if (NULL == hTimer)
@@ -259,8 +276,8 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 							ghEvents[3] = hTimer;
 							NumEvents = 4;
 							*/
-						}
-						else
+						//}
+						/*			else
 						{
 							SOCKET Temp = accept(Listener, NULL, NULL);
 							if (Temp != INVALID_SOCKET)
@@ -268,7 +285,7 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 								closesocket(Temp);
 								std::cout << "Refused-Already Connected" << std::endl;
 							}
-						}
+						}*/
 					}
 				}
 
@@ -284,10 +301,10 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 				}
 			}
 		}
-		else if (dwEvent == WAIT_OBJECT_0 + 2)
+		else if (dwEvent >= WAIT_OBJECT_0 + 2)
 		{
 			WSANETWORKEVENTS NetworkEvents;
-			if (SOCKET_ERROR == WSAEnumNetworkEvents(Accepter, hAccepterEvent, &NetworkEvents))
+			if (SOCKET_ERROR == WSAEnumNetworkEvents(sockmng[dwEvent-2].ASocket, sockmng[dwEvent - 2].AcceptEvent, &NetworkEvents))
 			{
 				std::cout << "WSAEnumNetworkEvent: " << WSAGetLastError() << " dwEvent  " << dwEvent << " lNetworkEvent " << std::hex << NetworkEvents.lNetworkEvents << std::endl;
 				NetworkEvents.lNetworkEvents = 0;
@@ -307,10 +324,10 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 						sockaddr_in saFrom;
 						int nFromLen = sizeof(sockaddr_in);
 
-						if ((result = recvfrom(Accepter, testText, sizeof(testText), 0, (sockaddr *)&saFrom, &nFromLen)) != SOCKET_ERROR)
+						if ((result = recvfrom(sockmng[dwEvent - 2].ASocket, testText, sizeof(testText), 0, (sockaddr *)&saFrom, &nFromLen)) != SOCKET_ERROR)
 						{
 							//std::cout << "Received : " << testText << std::endl;
-							RecvHandler(Accepter, testText, result, saFrom, nFromLen);
+							RecvHandler(sockmng[dwEvent - 2].ASocket, testText, result, saFrom, nFromLen);
 							
 						}
 						else 
@@ -341,26 +358,26 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 						std::cout << "FD_CLOSE" << std::endl;
 
 					}
-					CloseConnection();
+					CloseConnection(sockmng[dwEvent - 2].ASocket);
 				}
 			}
 		}
-		else if (dwEvent == WAIT_OBJECT_0 + 3)
-		{
-			unsigned int numbytes;
-			char testText[1000];
-			memcpy(testText, "Send data from AC Server", 24);
+		//else if (dwEvent == WAIT_OBJECT_0 + 3)
+		//{
+		//	unsigned int numbytes;
+		//	char testText[1000];
+		//	memcpy(testText, "Send data from AC Server", 24);
 
-			if(send(Accepter, testText, 24, 0))
-			{
-				std::cout << "WriteDataTcp sendbuff.data() Failed " << WSAGetLastError() << std::endl;
-				CloseConnection();
-			}
-			else {
-				std::cout << "WriteDataTcp sendbuff.size() Failed " << WSAGetLastError() << std::endl;
-				CloseConnection();
-			}
-	    }
+		//	if(send(Accepter, testText, 24, 0))
+		//	{
+		//		std::cout << "WriteDataTcp sendbuff.data() Failed " << WSAGetLastError() << std::endl;
+		//		CloseConnection();
+		//	}
+		//	else {
+		//		std::cout << "WriteDataTcp sendbuff.size() Failed " << WSAGetLastError() << std::endl;
+		//		CloseConnection();
+		//	}
+	 //   }
 	}
 
 	CleanUpACServer();
@@ -383,7 +400,7 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 			std::cout << "get registration infomation" << std::endl;
 			
 			// macro
-			setMacro(Accepter, regData);
+			setMacro(__InputSock, regData);
 
 			if (RegistrationUserData(regData))
 			{
@@ -417,6 +434,8 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 			TStatus resp = Disconnected;
 			std::cout << "email :" << LoginData->email << ", pwhash : " << LoginData->passwordHash << std::endl;
 
+			char* new_ip = getFromAddr(__InputSock);
+
 			char* myCID = NULL;
 			std::vector<TRegistration*>::iterator iter;
 			for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
@@ -429,12 +448,24 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 					if (!strncmp((*iter)->password, LoginData->passwordHash, (*iter)->PasswordSize))
 					{						
 						resp = Connected;
-						memcpy((*iter)->LastIPAddress, (char*)&sockip, socklen);
+						strcpy_s((*iter)->LastIPAddress, new_ip);
 						myCID = (*iter)->ContactID;
+
+						std::vector<TSocketManager>::iterator iitt;
+						for (iitt = sockmng.begin(); iitt != sockmng.end(); iitt++)
+						{
+							if (!strcmp((*iitt).IPAddr, (*iter)->LastIPAddress))
+							{
+								strcpy_s((*iitt).Owner, myCID);
+								std::cout << "Login Information : " << (*iter)->email << " / " << myCID << " / " << (*iitt).IPAddr << std::endl;
+								break;
+							}
+						}
+						break;
 					}
 				}
 			}
-			std::cout << "send login response " << resp << std::endl;
+			std::cout << "send login response to"<< resp << " in "  << myCID << std::endl;
 			sendStatusMsg(__InputSock, sockip, socklen, myCID, resp);
 			// compare stored data
 
@@ -476,28 +507,7 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 			}
 			std::cout << "merge data : " << clist.ListBuf << std::endl;
 			// send contact list
-			sendto(__InputSock, (char*)&clist, sizeof(clist), 0, (sockaddr*)&sockip, socklen);
-			
-			//TContactList* clist = (TContactList*)std::malloc(sizeof(TContactList));
-			//clist->MessageType = SendContactList;
-			//clist->ListSize = 0;
-			//strcpy_s(clist->ListBuf, "");
-			//// Load stored data
-			//std::vector<TRegistration*>::iterator iter;
-			//for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
-			//{				
-			//	strcat_s(clist->ListBuf, (*iter)->ContactID);
-			//	strcat_s(clist->ListBuf, "/");
-			//	clist->ListSize += 1;
-			//}
-			//std::cout << "merge data : " << clist->ListBuf << std::endl;
-			//// send contact list
-			//sendto(__InputSock, (char*)clist, sizeof(TContactList), 0, (sockaddr*)&sockip, socklen);
-			//free(clist);
-
-			// for i in range(Sizeof stored clist)
-			//		(clist->DevID).append(stored_clist[i])
-			// sendto(Accepter, (char *)clist, sizeof(TContactList), 0, 0, <<sockaddr>>, <<sockaddr_len>>);
+			sendto(__InputSock, (char*)&clist, sizeof(clist), 0, (sockaddr*)&sockip, socklen);	
 
 			break;
 		}
@@ -519,13 +529,24 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 					strcpy_s(msg.FromDevID, fromDev);
 					strcpy_s(msg.ToDevID, dev_id);
 
-					sockaddr_in sockTo;
+					std::vector<TSocketManager>::iterator iitt;
+					for (iitt = sockmng.begin(); iitt != sockmng.end(); iitt++)
+					{
+						if (!strcmp((*iitt).Owner, (*iter)->ContactID))
+						{
+							//std::cout << "Login Information : " << (*iter)->email << " / " << myCID << " / " << (*iitt).IPAddr << std::endl;
+							send((*iitt).ASocket, (char*)&msg, sizeof(msg), 0);
+							break;
+						}
+					}
+
+					/*sockaddr_in sockTo;
 					int ss = sizeof(sockaddr_in);
 					sockTo.sin_family = AF_INET;
 					inet_pton(AF_INET, (*iter)->LastIPAddress, &sockTo.sin_addr.s_addr);
 					sockTo.sin_port = htons(ACS_PORT);
 
-					sendto(Accepter, (char *)&msg, sizeof(msg), 0, (sockaddr *)&sockTo, ss);					
+					sendto(__InputSock, (char *)&msg, sizeof(msg), 0, (sockaddr *)&sockTo, ss);*/
 				}
 			}
 			 
@@ -558,7 +579,7 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 				strcpy_s(msg.FromDevID, fromDev);
 				strcpy_s(msg.ToDevID, dev_id);
 
-				sendto(Accepter, (char*)&msg, sizeof(msg), 0, (sockaddr*)&sockto, iResult);
+				sendto(__InputSock, (char*)&msg, sizeof(msg), 0, (sockaddr*)&sockto, iResult);
 			}			
 			break;
 		}
@@ -577,7 +598,7 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 
 				strcpy_s(msg.FromDevID, fromDev);
 				strcpy_s(msg.ToDevID, dev_id);
-				sendto(Accepter, (char*)&msg, sizeof(msg), 0, (sockaddr*)&sockto, iResult);
+				sendto(__InputSock, (char*)&msg, sizeof(msg), 0, (sockaddr*)&sockto, iResult);
 			}
 			break;
 		}
@@ -675,12 +696,12 @@ void setMacro(SOCKET __InputSock,TRegistration* regData)
 
 	char ipbuf[32];
 	sockaddr_in sock_a;
-	int size = sizeof(sock_a);
+	int size = sizeof(sockaddr_in);
 	memset(&sock_a, 0x00, sizeof(sock_a));
 	getpeername(__InputSock, (sockaddr*)&sock_a, &size);
 	inet_ntop(AF_INET, &sock_a.sin_addr, ipbuf, sizeof(ipbuf));
 
-	//std::cout << "IP address " << ipbuf << std::endl;
+	std::cout << "IP address - " << ipbuf << std::endl;
 	strcpy_s(regData->LastIPAddress, 32, ipbuf);
 }
 
@@ -688,7 +709,7 @@ char* getFromAddr(SOCKET __InputSock)
 {
 	char* ipbuf = (char *)std::malloc(sizeof(char)*32);
 	sockaddr_in sock_a;
-	int size = sizeof(sock_a);
+	int size = sizeof(sockaddr_in);
 	memset(&sock_a, 0x00, sizeof(sock_a));
 	getpeername(__InputSock, (sockaddr*)&sock_a, &size);
 	inet_ntop(AF_INET, &sock_a.sin_addr, ipbuf, sizeof(ipbuf));

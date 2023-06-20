@@ -83,6 +83,7 @@ typedef struct oRspWithMessage {
 	unsigned char Message[GENERAL_BUFSIZE];
 }TRspWithMessage;
 
+
 typedef enum {
 	Registration = 0x41,
 	RegistrationResponse,

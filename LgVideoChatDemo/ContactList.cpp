@@ -93,14 +93,17 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                             MessageBox(hwnd, selectedText, L"Selected Item", MB_OK);
 
                             // call request
-                            std::cout << "make a call to " << selectedText << std::endl;
+                            char* outbuf = (char*)std::malloc(sizeof(char) * NAME_BUFSIZE);
+                            WideCharToMultiByte(CP_ACP, 0, selectedText, -1, outbuf, NAME_BUFSIZE, NULL, NULL);
+                            std::cout << "make a call to " << outbuf << std::endl;
                             devStatus = Caller;
                             TDeviceID msg{};
                             msg.MessageType = RequestCall;
                             //int nLength = WideCharToMultiByte(CP_ACP, 0, target, -1, NULL, 0, NULL, NULL);
-                            char* outbuf = (char*)std::malloc(sizeof(char) * NAME_BUFSIZE);
-                            WideCharToMultiByte(CP_ACP, 0, selectedText, -1, outbuf, NAME_BUFSIZE, NULL, NULL);
+                            //char* outbuf = (char*)std::malloc(sizeof(char) * NAME_BUFSIZE);
+                            //WideCharToMultiByte(CP_ACP, 0, selectedText, -1, outbuf, NAME_BUFSIZE, NULL, NULL);
                             strcpy_s(msg.ToDevID, NAME_BUFSIZE, outbuf);
+                            strcpy_s(msg.FromDevID, MyID);
                             sendMsgtoACS((char*)&msg, sizeof(msg));
                         }
                     }
