@@ -75,7 +75,7 @@ static HWND hWndEdit;
 
 TStatus devStatus = Disconnected;
 char MyID[NAME_BUFSIZE];
-CRITICAL_SECTION CriticalSect;
+
 
 // Forward declarations of functions included in this code module:
 static ATOM                MyRegisterClass(HINSTANCE hInstance);

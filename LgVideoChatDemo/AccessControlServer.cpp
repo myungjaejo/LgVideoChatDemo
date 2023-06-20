@@ -328,10 +328,7 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 						if ((result = recvfrom(sockmng[dwEvent - 2].ASocket, testText, sizeof(testText), 0, (sockaddr *)&saFrom, &nFromLen)) != SOCKET_ERROR)
 						{
 							//std::cout << "Received : " << testText << std::endl;
-							//EnterCriticalSection(&CriticalSect);
-							RecvHandler(sockmng[dwEvent - 2].ASocket, testText, result, saFrom, nFromLen);
-							//LeaveCriticalSection(&CriticalSect);
-							
+							RecvHandler(sockmng[dwEvent - 2].ASocket, testText, result, saFrom, nFromLen);							
 						}
 						else 
 							std::cout << "ReadData failed " << WSAGetLastError() << std::endl;

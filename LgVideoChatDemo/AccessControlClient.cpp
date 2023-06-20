@@ -228,9 +228,7 @@ static DWORD WINAPI ThreadACClient(LPVOID ivalue)
                         if (iResult != SOCKET_ERROR)
                         {
                             //std::cout << "AC client recevied : " << InputBufferWithOffset << std::endl;
-                            EnterCriticalSection(&CriticalSect);
                             RecvHandler(Client, InputBufferWithOffset, iResult, safrom, socklen);
-                            LeaveCriticalSection(&CriticalSect);
                         }
                         else 
                             std::cout << "ReadDataTcpNoBlock buff failed " << WSAGetLastError() << std::endl;
