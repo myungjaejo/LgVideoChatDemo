@@ -192,6 +192,7 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         }
         case WM_DESTROY:
         {
+            PostMessage(hWndMain, WM_CLOSE_ACSCONNECT, 0, 0);
             DestroyWindow(hwnd);
             //PostQuitMessage(0);
             return 0;
@@ -199,6 +200,7 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         case WM_CLOSE: 
         {
             //PostQuitMessage(0);
+            PostMessage(hWndMain, WM_CLOSE_ACSCONNECT, 0, 0);
             DestroyWindow(hwnd);
             return 0;
         }

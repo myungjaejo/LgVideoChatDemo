@@ -114,6 +114,12 @@ static void CleanUpACServer(void)
 		Accepter = INVALID_SOCKET;
 	}
 
+	static std::vector<TSocketManager>::iterator iter;
+	for (iter = sockmng.begin(); iter != sockmng.end(); iter++)
+	{
+		closesocket((*iter).ASocket);
+		CloseHandle((*iter).AcceptEvent);
+	}
 	sockmng.clear();
 
 	RegistrationToFile();
@@ -398,7 +404,7 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 	 //   }
 	}
 
-	CleanUpACServer();
+	//CleanUpACServer();
 	std::cout << "Access Control Server Stopped" << std::endl;
 	return 0;
 }
@@ -485,24 +491,7 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 			}
 			std::cout << "send login response to "<< resp << " in "  << myCID << " and " << sockmng.size() << ", evt : "  << NumEvents << std::endl;
 			sendStatusMsg(__InputSock, sockip, socklen, myCID, resp);
-			//if (resp == Disconnected)
-			//{
-			//	std::vector<TSocketManager>::iterator itr;
-			//	for (itr = sockmng.begin(); itr != sockmng.end(); itr++)
-			//	{
-			//		//std::cout << "search "
-			//		if ((*itr).ASocket == __InputSock)
-			//		{
-			//			break;
-			//		}
-			//	}
-			//	if (itr != sockmng.end())
-			//	{
-			//		closesocket((*itr).ASocket);
-			//		sockmng.erase(itr);
-			//		NumEvents--;
-			//	}
-			//}
+
 			break;
 		}
 		case RequestStatus:
@@ -665,6 +654,7 @@ bool RegistrationToFile(void)
 	int len = controlDevices.size();
 	if (len < (MAX_DEVSIZE+1) )
 	{
+		std::cout << "Store File - size :" << len << std::endl;
 		StoreData(controlDevices);
 		return true;
 	}
