@@ -256,7 +256,7 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 							//hAccepterEvent = WSACreateEvent();
 							tmp.AcceptEvent = WSACreateEvent();
 							//WSAEventSelect(Accepter, hAccepterEvent, FD_READ | FD_WRITE | FD_CLOSE);
-							WSAEventSelect(tmp.ASocket, tmp.AcceptEvent, FD_READ);//| FD_WRITE | FD_CLOSE);							
+							WSAEventSelect(tmp.ASocket, tmp.AcceptEvent, FD_READ | FD_WRITE | FD_CLOSE);							
 							ghEvents[NumEvents] = tmp.AcceptEvent;
 							sockmng.push_back(tmp);
 							NumEvents += 1;
@@ -434,7 +434,7 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 			TStatus resp = Disconnected;
 			std::cout << "email :" << LoginData->email << ", pwhash : " << LoginData->passwordHash << std::endl;
 
-			char* myCID = NULL;
+			char myCID[NAME_BUFSIZE] = "None";
 			std::vector<TRegistration*>::iterator iter;
 			for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
 			{
@@ -447,7 +447,7 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 					{						
 						resp = Connected;
 						
-						myCID = (*iter)->ContactID;
+						strcpy_s(myCID, (*iter)->ContactID);
 
 						std::vector<TSocketManager>::iterator iitt;
 						for (iitt = sockmng.begin(); iitt != sockmng.end(); iitt++)
@@ -465,21 +465,26 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 					}
 				}
 			}
-			std::cout << "send login response to "<< resp << " in "  << myCID << std::endl;
+			std::cout << "send login response to "<< resp << " in "  << myCID << " and " << sockmng.size() << std::endl;
 			sendStatusMsg(__InputSock, sockip, socklen, myCID, resp);
-			// compare stored data
-
-			// compare result
-			// if true : status update
-			// TStatusInfo *sinfo = (TStatusInfo *)std::malloc(sizeof(TStatusInfo));
-			// sinfo->MessageType = SendStatus
-			// sinfo->status = "<< connect status >>"
-			// sendto(Accepter, (char *)sinfo, sizeof(TStatusInfo), 0, 0, <<sockaddr>>, <<sockaddr_len>>);
-
-			// if false :
-
-			//testlogin();
-
+			if (resp == Disconnected)
+			{
+				std::vector<TSocketManager>::iterator itr;
+				for (itr = sockmng.begin(); itr != sockmng.end(); itr++)
+				{
+					//std::cout << "search "
+					if ((*itr).ASocket == __InputSock)
+					{
+						break;
+					}
+				}
+				if (itr != sockmng.end())
+				{
+					closesocket((*itr).ASocket);
+					sockmng.erase(itr);
+					NumEvents--;
+				}
+			}
 			break;
 		}
 		case RequestStatus:

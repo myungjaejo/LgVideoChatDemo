@@ -379,13 +379,17 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 //    (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
                 break;
             case IDM_LOGOUT:
+                SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUEST,
+                    (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
+                SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_DENY,
+                    (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
                 SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_LOGIN,
                     (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
                 SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_LOGOUT,
                     (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
                 devStatus = Disconnected;
                 OnDisconnectACS(hWnd, message, wParam, lParam);
-                MessageBox(hWnd, TEXT("LogIn Process"), TEXT("LogIn Failed"), MB_OK | MB_ICONEXCLAMATION);
+                MessageBox(hWnd, TEXT("Disconnected"), TEXT("From Access Server"), MB_OK | MB_ICONEXCLAMATION);
                 break;
             default:
                 return DefWindowProc(hWnd, message, wParam, lParam);
