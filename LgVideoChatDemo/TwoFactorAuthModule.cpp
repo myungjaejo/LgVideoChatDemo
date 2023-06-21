@@ -72,9 +72,9 @@ int WINAPI CreateTwoFactorAuthWindow(HWND Phwnd)
     HWND hwndMentionLabel = CreateWindowEx(
         0,
         L"STATIC",
-        L"Please Insert Received TFA Message",
-        WS_VISIBLE | WS_CHILD,
-        50, 20, 300, 50,
+        L"Please Insert\nReceived TFA Message",
+        WS_VISIBLE | WS_CHILD | SS_CENTER,
+        50, 20, 300, 80,
         hwnds, NULL, (HINSTANCE)GetWindowLongPtr(hwnds, GWLP_HINSTANCE), NULL
     );
 
@@ -101,9 +101,27 @@ int WINAPI CreateTwoFactorAuthWindow(HWND Phwnd)
         L"EDIT",
         L"",
         WS_VISIBLE | WS_CHILD | ES_AUTOHSCROLL,
-        100, 20, 220, 20,
+        80, 120, 220, 40,
         hwnds, NULL, NULL, NULL
     );
+
+    hFont = CreateFont(
+        32,           // 원하는 글꼴 크기
+        0,                     // 글꼴 너비
+        0,                     // 각도
+        0,                     // 기준선의 각도
+        FW_NORMAL,             // 글꼴 두께
+        FALSE,                 // 기울임 설정 여부
+        FALSE,                 // 밑줄 설정 여부
+        FALSE,                 // 취소선 설정 여부
+        DEFAULT_CHARSET,       // 문자 집합
+        OUT_DEFAULT_PRECIS,    // 출력 정밀도
+        CLIP_DEFAULT_PRECIS,   // 클리핑 정밀도
+        DEFAULT_QUALITY,       // 출력 품질
+        DEFAULT_PITCH | FF_DONTCARE,  // 글꼴 종류
+        L"Arial"               // 글꼴 이름
+    );
+    SendMessage(hInputEdit, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
 
     // 윈도우 표시
     ShowWindow(hwnds, SW_SHOW);
