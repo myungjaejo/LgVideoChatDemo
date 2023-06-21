@@ -357,7 +357,11 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
         if (sMsg->status == Connected)
         {
             devStatus = Connected;
-            SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUET,
+            SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUEST,
+                (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
+            SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_LOGIN,
+                (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
+            SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_LOGOUT,
                 (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
 
             strcpy_s(MyID, sMsg->myCID);
@@ -373,6 +377,7 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
         }
         else
         {
+            PostMessage(hWndMain, WM_COMMAND, (WPARAM)IDM_LOGOUT, 0);
             std::cout << "Lonin Failed " << std::endl;
         }
 

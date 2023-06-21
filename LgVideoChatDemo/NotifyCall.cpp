@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <vector>
 #include <iostream>
+#include <Commctrl.h>
 #include "LgVideoChatDemo.h"
 #include "AccessControlClient.h"
 #include "VideoServer.h"
@@ -91,6 +92,10 @@ LRESULT CALLBACK WindowNCProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
             bool loopback = false;
             //StartVideoServer(loopback);
             PostMessage(hWndMain, WM_OPEN_VIDEOSERVER, 0, 0);
+            SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUEST,
+                (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
+            SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_DENY,
+                (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
 
             //send msg
             TDeviceID* msg = (TDeviceID*)std::malloc(sizeof(TDeviceID));

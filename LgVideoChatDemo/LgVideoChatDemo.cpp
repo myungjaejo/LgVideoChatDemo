@@ -41,7 +41,7 @@
 #define IDC_EDIT_REMOTE        1011
 #define IDC_CHECKBOX_LOOPBACK  1012 
 #define IDC_EDIT               1013 
-//#define IDM_CALL_REQUET        1014
+//#define IDM_CALL_REQUEST       1014
 //#define IDM_CALL_DENY          1015
 //#define IDM_START_SERVER       1016
 //#define IDM_STOP_SERVER        1017
@@ -49,10 +49,9 @@
 #define IDC_VAD_STATE_STATUS   1019
 #define IDC_CHECKBOX_AEC       1020 
 #define IDC_CHECKBOX_NS        1021
-#define IDM_LOGIN              1022
-#define IDM_CONTACTLIST        1023
+//#define IDM_LOGIN              1022
+//#define IDM_LOGOUT             1023
 
-#define UI_FIVE                 true
 
 // Global Variables:
 HWND hWndMain;
@@ -332,33 +331,24 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             case IDM_EXIT:
                 DestroyWindow(hWnd);
                 break;
-            case IDM_CALL_REQUET:
-                /*if (OnConnect(hWnd, message, wParam, lParam))
-                {
-                    SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUET,
-                        (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
-                    SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_DENY,
-                        (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
-                }*/
+            case IDM_CALL_REQUEST:
+                SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUEST,
+                    (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
+                SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_DENY,
+                    (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
                 CreateContactList(hWnd);
                 break;
             case IDM_CALL_DENY:
-                SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUET,
+                SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUEST,
                     (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
                 SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_DENY,
                     (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
                 if (devStatus == Caller)
-                {
                     OnDisconnect(hWnd, message, wParam, lParam);
-                }
                 else if (devStatus == Callee)
-                {
                     StopVideoServer();
-                }
                 else
-                {
                     std::cout << "ERROR DISConnect " << std::endl;
-                }
                    
                 break;
             case IDM_START_SERVER:
@@ -367,9 +357,6 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_STOP_SERVER,
                     (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
                 EnableWindow(GetDlgItem(hWnd, IDC_CHECKBOX_LOOPBACK), false);
-                //EnableWindow(GetDlgItem(hWnd, IDC_CHECKBOX_AEC), false);
-                //EnableWindow(GetDlgItem(hWnd, IDC_CHECKBOX_NS), false);
-                //OnStartServer(hWnd, message, wParam, lParam);
                 StartACServer(Loopback);
                 break;
             case IDM_STOP_SERVER:
@@ -378,21 +365,27 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_STOP_SERVER,
                     (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
                 EnableWindow(GetDlgItem(hWnd, IDC_CHECKBOX_LOOPBACK), true);
-                //EnableWindow(GetDlgItem(hWnd, IDC_CHECKBOX_AEC), true);
-                //EnableWindow(GetDlgItem(hWnd, IDC_CHECKBOX_NS), true);
-                //OnStopServer(hWnd, message, wParam, lParam);
                 StopACServer();
                 break;
             case IDM_LOGIN:
-                // StartACServer(Loopback);
+                //SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_LOGIN,
+                //    (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
+                //SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_LOGOUT,
+                //    (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
                 OnConnectACS(hWnd, message, wParam, lParam);
                 LoginCreateForm(hWnd);
                 //devStatus = Server;
                 //SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_START_SERVER,
                 //    (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
                 break;
-            case IDM_CONTACTLIST:
-                CreateContactList(hWnd);
+            case IDM_LOGOUT:
+                SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_LOGIN,
+                    (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
+                SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_LOGOUT,
+                    (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
+                devStatus = Disconnected;
+                OnDisconnectACS(hWnd, message, wParam, lParam);
+                MessageBox(hWnd, TEXT("LogIn Process"), TEXT("LogIn Failed"), MB_OK | MB_ICONEXCLAMATION);
                 break;
             default:
                 return DefWindowProc(hWnd, message, wParam, lParam);
@@ -422,11 +415,11 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         SendMessage(hWndMain, WM_COMMAND, IDM_CALL_DENY, 0);
         break;
     case WM_REMOTE_CONNECT:
-        SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUET,
+        SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUEST,
             (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
         break;
     case WM_REMOTE_LOST:
-        SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUET,
+        SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUEST,
             (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
         break;
     case WM_VAD_STATE:
@@ -461,7 +454,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         }
         break;
     case WM_OPEN_CONTACTLIST:
-        CreateContactList(hWnd);
+        SendMessage(hWndMain, WM_COMMAND, IDM_CALL_REQUEST, 0);
         break;
     case WM_OPEN_CALLREQUEST:
         CreateCallNotification(hWnd, (char*)lParam);
@@ -506,7 +499,7 @@ HWND CreateSimpleToolbar(HWND hWndParent)
 {
     // Declare and initialize local constants.
     const int ImageListID = 0;
-    const int numButtons = (UI_FIVE? 5: 2);
+    const int numButtons = 6;
     const int bitmapSize = 16;
 
     const DWORD buttonStyles = BTNS_AUTOSIZE;
@@ -540,16 +533,12 @@ HWND CreateSimpleToolbar(HWND hWndParent)
 
     TBBUTTON tbButtons[numButtons] =
     {
-#if UI_FIVE
-        { MAKELONG(VIEW_NETDISCONNECT, ImageListID), IDM_CALL_REQUET,     TBSTATE_INDETERMINATE,       buttonStyles, {0}, 0, (INT_PTR)L"   Call   " },
-        { MAKELONG(VIEW_NETDISCONNECT, ImageListID), IDM_CALL_DENY,  TBSTATE_INDETERMINATE, buttonStyles, {0}, 0, (INT_PTR)L"Call Deny"},
-        { MAKELONG(VIEW_NETDISCONNECT, ImageListID), IDM_START_SERVER,TBSTATE_INDETERMINATE,       buttonStyles, {0}, 0, (INT_PTR)L"Start Server"},
-        { MAKELONG(VIEW_NETDISCONNECT, ImageListID), IDM_STOP_SERVER, TBSTATE_INDETERMINATE, buttonStyles, {0}, 0, (INT_PTR)L"Stop Server"},
-        { MAKELONG(VIEW_NETCONNECT,    ImageListID), IDM_LOGIN,       TBSTATE_ENABLED,       buttonStyles, {0}, 0, (INT_PTR)L"login"},
-#else
-        { MAKELONG(VIEW_NETCONNECT,    ImageListID), IDM_LOGIN,       TBSTATE_ENABLED,       buttonStyles, {0}, 0, (INT_PTR)L"login"},
-        { MAKELONG(VIEW_NETCONNECT,    ImageListID), IDM_CONTACTLIST, TBSTATE_ENABLED,       buttonStyles, {0}, 0, (INT_PTR)L"Contact List"},
-#endif
+        { MAKELONG(VIEW_NETDISCONNECT, ImageListID), IDM_CALL_REQUEST,  TBSTATE_INDETERMINATE, buttonStyles, {0}, 0, (INT_PTR)L"   Call   " },
+        { MAKELONG(VIEW_NETDISCONNECT, ImageListID), IDM_CALL_DENY,     TBSTATE_INDETERMINATE, buttonStyles, {0}, 0, (INT_PTR)L"Call Deny"},
+        { MAKELONG(VIEW_NETDISCONNECT, ImageListID), IDM_START_SERVER,  TBSTATE_INDETERMINATE, buttonStyles, {0}, 0, (INT_PTR)L"Start Server"},
+        { MAKELONG(VIEW_NETDISCONNECT, ImageListID), IDM_STOP_SERVER,   TBSTATE_INDETERMINATE, buttonStyles, {0}, 0, (INT_PTR)L"Stop Server"},
+        { MAKELONG(VIEW_NETCONNECT,    ImageListID), IDM_LOGIN,         TBSTATE_ENABLED,       buttonStyles, {0}, 0, (INT_PTR)L" Login "},
+        { MAKELONG(VIEW_NETDISCONNECT, ImageListID), IDM_LOGOUT,        TBSTATE_INDETERMINATE, buttonStyles, {0}, 0, (INT_PTR)L"Logout"},
     };
 
     // Add buttons.

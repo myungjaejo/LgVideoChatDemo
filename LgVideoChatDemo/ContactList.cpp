@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <vector>
 #include <iostream>
+#include <Commctrl.h>
 #include "LgVideoChatDemo.h"
 #include "AccessControlClient.h"
 
@@ -105,6 +106,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                             strcpy_s(msg.ToDevID, outbuf);
                             strcpy_s(msg.FromDevID, MyID);
                             sendMsgtoACS((char*)&msg, sizeof(msg));
+
+                            SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUEST,
+                                (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
+                            SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_DENY,
+                                (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
 
                             DestroyWindow(hwnd);
                         }
