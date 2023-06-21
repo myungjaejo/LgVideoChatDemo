@@ -659,6 +659,7 @@ static int OnConnect(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     //PRINT(_T("Remote Address : %s Loopback %s\r\n"), cstring, Loopback ? _T("True"): _T("False"));
     char IPAddr[128];
     strcpy_s(IPAddr, (char*)lParam);
+    std::cout << "Remote Address : " << IPAddr << "Loopback : " << (Loopback ? "True" : "False") << std::endl;
  
     if (!IsVideoClientRunning())
     {
