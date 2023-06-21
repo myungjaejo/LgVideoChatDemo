@@ -27,11 +27,11 @@ int exchangeTCHToChar(TCHAR* target, char* outbuf)
 
 int WINAPI CreateTwoFactorAuthWindow(HWND Phwnd)
 {
-    if (devStatus == Disconnected)
-    {
-        MessageBox(NULL, L"Please Login First", L"Error", MB_OK | MB_ICONERROR);
-        return 1;
-    }
+    //if (devStatus == Disconnected)
+    //{
+    //    MessageBox(NULL, L"Please Login First", L"Error", MB_OK | MB_ICONERROR);
+    //    return 1;
+    //}
     // 윈도우 클래스 등록
     WNDCLASS wc = { 0 };
     wc.lpfnWndProc = WindowTFAProc;
@@ -134,9 +134,10 @@ LRESULT CALLBACK WindowTFAProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
             TCHAR InputTFA[RECEVER_LENTH] = TEXT("");            
             GetWindowText(hInputEdit, InputTFA, RECEVER_LENTH);
             TTwoFactor* tMsg = (TTwoFactor*)std::malloc(sizeof(TTwoFactor));
-            tMsg->MessageType = TwoFactorResponse;
+            tMsg->MessageType = TwoFactorRequest;
             strcpy_s(tMsg->myCID, MyID);
             exchangeTCHToChar(InputTFA, tMsg->TFA);
+            std::cout << tMsg->TFA << std::endl;
             
             sendMsgtoACS((char*)tMsg, sizeof(TTwoFactor));
             free(tMsg);        
@@ -146,7 +147,7 @@ LRESULT CALLBACK WindowTFAProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
         case BUTTON_CANCEL:
         {
             TTwoFactor* tMsg = (TTwoFactor*)std::malloc(sizeof(TTwoFactor));
-            tMsg->MessageType = TwoFactorResponse;
+            tMsg->MessageType = TwoFactorRequest;
 
             sendMsgtoACS((char*)tMsg, sizeof(TTwoFactor));
             free(tMsg);

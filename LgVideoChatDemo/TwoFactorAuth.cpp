@@ -38,7 +38,8 @@ void MakeRandomToken()
 
 int CheckToken(char* input_token, int sec)
 {
-    if (sec >= 0 && sec <= 30)
+    std::cout << "Token : " << random_token << " Recv : " << input_token << std::endl;
+    if (sec >= 0 && sec <= 120)
     {
         if (strcmp(random_token, input_token) == 0)
         {
@@ -52,6 +53,7 @@ int CheckToken(char* input_token, int sec)
     }
     else
     {
+        std::cout << "Timeout!!!!!!!! "<< std::endl;
         return TFA_FAIL_TIME_OUT;
     }
 }
@@ -83,7 +85,23 @@ void TFAProcess(const char* reciver)
         InternetCloseHandle(hInternet);
     }
 
-    std::string command = "powershell.exe -ExecutionPolicy Bypass -Command \"Send-MailMessage -To '" + std::string(reciver) + "' -From '" + admin_id + "@gmail.com' -Subject 'Two-factor authentication' -Body 'Token : " + body_tokne + "'\"";
+    //std::string command = "powershell.exe -ExecutionPolicy Bypass -Command \"Send-MailMessage -To '" + std::string(reciver) + "' -From '" + admin_id + "@gmail.com' -Subject 'Two-factor authentication' -Body 'Token : " + body_tokne + "' -SmtpServer '" + smtp_server + "' -Port 587 -UseSsl -Credential (New-Object System.Management.Automation.PSCredential -ArgumentList '" + admin_id + "@gmail.com', (ConvertTo-SecureString -String '" + admin_passwd + "' - AsPlainText - Force))" + "\"";
+    std::string command = "powershell.exe -ExecutionPolicy Bypass -Command \"Send-MailMessage -To '";
+    command += std::string(reciver);
+    command += "' -From '";
+    command += std::string(admin_id);
+    command += "@gmail.com' -Subject 'Two-factor authentication' -Body 'Token : ";
+    command += std::string(body_tokne);
+    command += "' -SmtpServer '";
+    command += std::string(smtp_server);
+    command += "' -Port 587 -UseSsl -Credential (New-Object System.Management.Automation.PSCredential -ArgumentList '";
+    command += std::string(admin_id);
+    command += "@gmail.com', (ConvertTo-SecureString -String '";
+    command += std::string(admin_passwd);
+    command += "' -AsPlainText -Force))\"";
+
+    //std::cout << command.c_str() << std::endl;
+
     system(command.c_str());
 }
 

@@ -116,6 +116,6 @@ typedef enum {
 	Caller,
 	Callee,
 	Calling,
-	Server = 31967,
-	VaildTwoFactor = 50509
+	VaildTwoFactor,
+	Server = 31967	
 }TStatus;

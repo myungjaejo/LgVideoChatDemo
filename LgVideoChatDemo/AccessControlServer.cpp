@@ -533,12 +533,30 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 						break;
 					}
 				}
-				sendStatusMsg(__InputSock, sockip, socklen, myCID, resp);
+				TStatusInfo* feedback = (TStatusInfo*)std::malloc(sizeof(TStatusInfo));
+				if (feedback != NULL)
+				{
+					feedback->MessageType = TwoFactorResponse;
+					feedback->status = Connected;
+					strcpy_s(feedback->myCID, myCID);
+					sendto(__InputSock, (char*)feedback, sizeof(TStatusInfo), 0, (sockaddr*)&sockip, socklen);
+					free(feedback);
+					return true;
+				}
 			}
 			else
 			{
 				std::cout << "Wrong Value" << std::endl;
-				sendStatusMsg(__InputSock, sockip, socklen, myCID, resp);
+				TStatusInfo* feedback = (TStatusInfo*)std::malloc(sizeof(TStatusInfo));
+				if (feedback != NULL)
+				{
+					feedback->MessageType = TwoFactorResponse;
+					feedback->status = Disconnected;
+					strcpy_s(feedback->myCID, myCID);
+					sendto(__InputSock, (char*)feedback, sizeof(TStatusInfo), 0, (sockaddr*)&sockip, socklen);
+					free(feedback);
+					return true;
+				}
 			}
 			break;
 		}
