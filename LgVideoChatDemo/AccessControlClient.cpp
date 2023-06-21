@@ -357,11 +357,11 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
         if (sMsg->status == Connected)
         {
             devStatus = Connected;
-            SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUEST,
+            PostMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUEST,
                 (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
-            SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_LOGIN,
+            PostMessage(hWndMainToolbar, TB_SETSTATE, IDM_LOGIN,
                 (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
-            SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_LOGOUT,
+            PostMessage(hWndMainToolbar, TB_SETSTATE, IDM_LOGOUT,
                 (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
 
             strcpy_s(MyID, sMsg->myCID);
