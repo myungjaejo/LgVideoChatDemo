@@ -503,8 +503,9 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 			TTwoFactor* tMsg = (TTwoFactor *) data;
 			TStatus resp = Disconnected;
 			char myCID[NAME_BUFSIZE] = "None";
+			std::cout << "RECEIVED TOKEN : " << tMsg->TFA << std::endl;
 			int iResult = ReadTFA(tMsg->TFA);
-			if (TFA_SUCCESS)
+			if (iResult == TFA_SUCCESS)
 			{
 				resp = Connected;
 				strcpy_s(myCID, tMsg->myCID);

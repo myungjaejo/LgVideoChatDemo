@@ -143,6 +143,7 @@ LRESULT CALLBACK WindowTFAProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
             free(tMsg);        
 
             DestroyWindow(hwnd);
+            break;
         }
         case BUTTON_CANCEL:
         {
@@ -153,6 +154,7 @@ LRESULT CALLBACK WindowTFAProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
             free(tMsg);
             //strcpy_s(MyID. NULL);
             DestroyWindow(hwnd);
+            break;
         }
         }
     }

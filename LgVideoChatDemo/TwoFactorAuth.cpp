@@ -41,14 +41,13 @@ int CheckToken(char* input_token, int sec)
     std::cout << "Token : " << random_token << " Recv : " << input_token << std::endl;
     if (sec >= 0 && sec <= 120)
     {
-        if (strcmp(random_token, input_token) == 0)
+        if (!strcmp(random_token, input_token))
         {
             return TFA_SUCCESS;
         }
         else
         {
             return TFA_FAIL_WRONG;
-
         }
     }
     else
