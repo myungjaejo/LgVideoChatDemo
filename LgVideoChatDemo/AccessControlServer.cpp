@@ -120,6 +120,25 @@ static void CleanUpACServer(void)
 	controlDevices.clear();
 }
 
+static void CloseConnectionACS(SOCKET __InputSock)
+{	
+	static std::vector<TSocketManager>::iterator iter;
+	for (iter = sockmng.begin(); iter != sockmng.end(); iter++)
+	{
+		if ((*iter).ASocket == __InputSock)
+			break;
+	}
+
+	if ((*iter).ASocket != INVALID_SOCKET)
+	{
+		closesocket((*iter).ASocket);
+		(*iter).ASocket = INVALID_SOCKET;
+		//PostMessage(hWndMain, WM_REMOTE_LOST, 0, 0);
+	}
+	sockmng.erase(iter);
+	NumEvents -= 1;
+}
+
 static void CloseConnection(SOCKET __InputSock)
 {
 	if (__InputSock != INVALID_SOCKET)
@@ -252,7 +271,7 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 								strcpy_s(tmp.IPAddr, RemoteIp);
 							}
 
-							PostMessage(hWndMain, WM_REMOTE_CONNECT, 0, 0);
+							//PostMessage(hWndMain, WM_REMOTE_CONNECT, 0, 0);
 							//hAccepterEvent = WSACreateEvent();
 							tmp.AcceptEvent = WSACreateEvent();
 							//WSAEventSelect(Accepter, hAccepterEvent, FD_READ | FD_WRITE | FD_CLOSE);
@@ -349,7 +368,6 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 				if (NetworkEvents.lNetworkEvents & FD_CLOSE)
 				{
 					if (NetworkEvents.iErrorCode[FD_CLOSE_BIT] != 0)
-
 					{
 						std::cout << "FD_CLOSE failed with error Connection " << NetworkEvents.iErrorCode[FD_CLOSE_BIT] << std::endl;
 					}
@@ -358,7 +376,7 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 						std::cout << "FD_CLOSE" << std::endl;
 
 					}
-					CloseConnection(sockmng[dwEvent - 2].ASocket);
+					CloseConnectionACS(sockmng[dwEvent - 2].ASocket);
 				}
 			}
 		}
@@ -465,26 +483,26 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 					}
 				}
 			}
-			std::cout << "send login response to "<< resp << " in "  << myCID << " and " << sockmng.size() << std::endl;
+			std::cout << "send login response to "<< resp << " in "  << myCID << " and " << sockmng.size() << ", evt : "  << NumEvents << std::endl;
 			sendStatusMsg(__InputSock, sockip, socklen, myCID, resp);
-			if (resp == Disconnected)
-			{
-				std::vector<TSocketManager>::iterator itr;
-				for (itr = sockmng.begin(); itr != sockmng.end(); itr++)
-				{
-					//std::cout << "search "
-					if ((*itr).ASocket == __InputSock)
-					{
-						break;
-					}
-				}
-				if (itr != sockmng.end())
-				{
-					closesocket((*itr).ASocket);
-					sockmng.erase(itr);
-					NumEvents--;
-				}
-			}
+			//if (resp == Disconnected)
+			//{
+			//	std::vector<TSocketManager>::iterator itr;
+			//	for (itr = sockmng.begin(); itr != sockmng.end(); itr++)
+			//	{
+			//		//std::cout << "search "
+			//		if ((*itr).ASocket == __InputSock)
+			//		{
+			//			break;
+			//		}
+			//	}
+			//	if (itr != sockmng.end())
+			//	{
+			//		closesocket((*itr).ASocket);
+			//		sockmng.erase(itr);
+			//		NumEvents--;
+			//	}
+			//}
 			break;
 		}
 		case RequestStatus:
