@@ -20,6 +20,7 @@
 #define TIME_STRSIZE		512
 #define IP_BUFFSIZE			512
 #define PARSE_NAME_BUFSIZE	1024
+#define TWOFACTOR_BUFSIZE	256
 #define MAX_DEVSIZE			5
 
 typedef struct oRegistration {
@@ -45,6 +46,12 @@ typedef struct oLogin {
 	unsigned int PasswordHashSize;
 	char passwordHash[PASSWORD_BUFSIZE];
 }TLogin;
+
+typedef struct oTwoFactor {
+	unsigned char MessageType;
+	char myCID[NAME_BUFSIZE];
+	char TFA[TWOFACTOR_BUFSIZE];
+}TTwoFactor;
 
 typedef struct oContactList {
 	unsigned char MessageType;
@@ -97,7 +104,9 @@ typedef enum {
 	SendContactList,
 	RequestCall,
 	AcceptCall,
-	RejectCall
+	RejectCall,
+	TwoFactorRequest,
+	TwoFactorResponse
 }TNetworkCommand;
 
 
@@ -107,5 +116,6 @@ typedef enum {
 	Caller,
 	Callee,
 	Calling,
-	Server = 31967
+	Server = 31967,
+	VaildTwoFactor = 50509
 }TStatus;

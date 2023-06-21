@@ -25,6 +25,7 @@
 //#include "definition.h"
 #include "ContactList.h"
 #include "NotifyCall.h"
+#include "TwoFactorAuthModule.h"
 
 #pragma comment(lib,"comctl32.lib")
 #ifdef _DEBUG
@@ -72,7 +73,6 @@ static HWND hWndEdit;
 
 TStatus devStatus = Disconnected;
 char MyID[NAME_BUFSIZE];
-
 
 // Forward declarations of functions included in this code module:
 static ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -372,11 +372,11 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 //    (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
                 //SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_LOGOUT,
                 //    (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
-                OnConnectACS(hWnd, message, wParam, lParam);
-                LoginCreateForm(hWnd);
-                //devStatus = Server;
-                //SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_START_SERVER,
-                //    (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
+                //OnConnectACS(hWnd, message, wParam, lParam);
+                //LoginCreateForm(hWnd);
+                devStatus = Server;
+                SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_START_SERVER,
+                    (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
                 break;
             case IDM_LOGOUT:
                 SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUEST,
@@ -473,6 +473,9 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         break;
     case WM_CLOSE_ACSCONNECT:
         OnDisconnectACS(hWnd, message, wParam, lParam);
+        break;
+    case WM_OPEN_TWOFACTORAUTH:
+        CreateTwoFactorAuthWindow(hWnd);
         break;
 
     default:

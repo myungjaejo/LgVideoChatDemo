@@ -181,20 +181,6 @@ LRESULT CALLBACK WindowNCProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
         );
         SendMessage(hwndCallLabel, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
 
-        // ComboBox 생성
-        //hComboBox = CreateWindowEx(0, L"ComboBox", NULL, WS_CHILD | WS_VISIBLE | CBS_SIMPLE,
-        //    10, 10, 200, 200, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
-
-        //// ComboBox에 항목 추가
-        //TCHAR Contact[128];
-
-        //std::vector<char*>::iterator iter;
-
-        //for (iter = ContactList.begin(); iter != ContactList.end(); iter++)
-        //{
-        //    MultiByteToWideChar(CP_ACP, 0, *iter, -1, Contact, 128);
-        //    SendMessage(hComboBox, CB_ADDSTRING, 0, (LPARAM)Contact);
-        //}
     }
     break;
 

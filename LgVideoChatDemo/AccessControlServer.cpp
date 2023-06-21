@@ -14,7 +14,7 @@
 #include "TcpSendRecv.h"
 #include "filemanager.h"
 #include "VideoServer.h"
-//#include "definition.h"
+#include "TwoFactorAuth.h"
 
 static HANDLE hACServerListenerEvent = INVALID_HANDLE_VALUE;
 static HANDLE hEndACServerEvent = INVALID_HANDLE_VALUE;
@@ -469,22 +469,26 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 				{
 					if (!strncmp((*iter)->password, LoginData->passwordHash, (*iter)->PasswordSize))
 					{						
-						resp = Connected;
+						//resp = Connected;
 						
-						strcpy_s(myCID, (*iter)->ContactID);
+						//strcpy_s(myCID, (*iter)->ContactID);
 
-						std::vector<TSocketManager>::iterator iitt;
-						for (iitt = sockmng.begin(); iitt != sockmng.end(); iitt++)
-						{
-							//std::cout << "search "
-							if ((*iitt).ASocket == __InputSock)
-							{
-								strcpy_s((*iitt).Owner, myCID);
-								strcpy_s((*iter)->LastIPAddress, (*iitt).IPAddr);
-								std::cout << "Login Information : " << (*iter)->email << " / " << myCID << " / " << (*iitt).IPAddr << std::endl;
-								break;
-							}
-						}
+						//std::vector<TSocketManager>::iterator iitt;
+						//for (iitt = sockmng.begin(); iitt != sockmng.end(); iitt++)
+						//{
+						//	//std::cout << "search "
+						//	if ((*iitt).ASocket == __InputSock)
+						//	{
+						//		strcpy_s((*iitt).Owner, myCID);
+						//		strcpy_s((*iter)->LastIPAddress, (*iitt).IPAddr);
+						//		std::cout << "Login Information : " << (*iter)->email << " / " << myCID << " / " << (*iitt).IPAddr << std::endl;
+						//		break;
+						//	}
+						//}
+
+						resp = VaildTwoFactor;
+						strcpy_s(myCID, (*iter)->ContactID);
+						SendTFA(LoginData->email);
 						break;
 					}
 				}
@@ -492,6 +496,50 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 			std::cout << "send login response to "<< resp << " in "  << myCID << " and " << sockmng.size() << ", evt : "  << NumEvents << std::endl;
 			sendStatusMsg(__InputSock, sockip, socklen, myCID, resp);
 
+			break;
+		}
+		case TwoFactorRequest:
+		{
+			TTwoFactor* tMsg = (TTwoFactor *) data;
+			TStatus resp = Disconnected;
+			char myCID[NAME_BUFSIZE] = "None";
+			int iResult = ReadTFA(tMsg->TFA);
+			if (TFA_SUCCESS)
+			{
+				resp = Connected;
+				strcpy_s(myCID, tMsg->myCID);
+
+				std::vector<TSocketManager>::iterator iitt;
+				for (iitt = sockmng.begin(); iitt != sockmng.end(); iitt++)
+				{
+					//std::cout << "search "
+					if ((*iitt).ASocket == __InputSock)
+					{
+						std::vector<TRegistration*>::iterator iter;
+						for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
+						{
+							if (!strcmp((*iter)->ContactID, myCID))
+							{
+								strcpy_s((*iitt).Owner, myCID);
+								strcpy_s((*iter)->LastIPAddress, (*iitt).IPAddr);
+								std::cout << "Login Information : " << (*iter)->email << " / " << myCID << " / " << (*iitt).IPAddr << std::endl;
+								break;
+							}
+						}
+						if (iter == controlDevices.end())
+						{
+							std::cout << "Can't find user" << std::endl;
+						}
+						break;
+					}
+				}
+				sendStatusMsg(__InputSock, sockip, socklen, myCID, resp);
+			}
+			else
+			{
+				std::cout << "Wrong Value" << std::endl;
+				sendStatusMsg(__InputSock, sockip, socklen, myCID, resp);
+			}
 			break;
 		}
 		case RequestStatus:

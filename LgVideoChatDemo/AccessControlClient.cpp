@@ -18,6 +18,7 @@
 #include <opencv2\opencv.hpp>
 #include "Camera.h"
 #include "DisplayImage.h"
+#include "TwoFactorAuth.h"
 
 static HANDLE hClientEvent = INVALID_HANDLE_VALUE;
 static HANDLE hEndACClientEvent = INVALID_HANDLE_VALUE;
@@ -354,6 +355,44 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
     case LoginResponse:
     {
         TStatusInfo* sMsg = (TStatusInfo*)data;
+        if (sMsg->status == VaildTwoFactor)
+        {
+            //devStatus = Connected;
+            //PostMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUEST,
+            //    (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
+            //PostMessage(hWndMainToolbar, TB_SETSTATE, IDM_LOGIN,
+            //    (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
+            //PostMessage(hWndMainToolbar, TB_SETSTATE, IDM_LOGOUT,
+            //    (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
+
+            //strcpy_s(MyID, sMsg->myCID);
+            //std::cout << "Lonin Success - ID : "<< MyID << std::endl;
+
+            //TCommandOnly* msg = (TCommandOnly*)std::malloc(sizeof(TCommandOnly));
+            //if (msg != NULL)
+            //{
+            //    msg->MessageType = RequestContactList;
+            //    msg->answer = true;
+            //    sendMsgtoACS((char*)msg, sizeof(TCommandOnly));
+            //}
+
+            //open Two factor popup
+            //SendTFA(sMsg->myCID);
+            strcpy_s(MyID, sMsg->myCID);
+            PostMessage(hWndMain, WM_OPEN_TWOFACTORAUTH, 0, 0);
+        }
+        else
+        {
+            devStatus = Disconnected;
+            PostMessage(hWndMain, WM_COMMAND, (WPARAM)IDM_LOGOUT, 0);
+            std::cout << "Lonin Failed " << std::endl;
+        }
+
+        break;
+    }
+    case TwoFactorResponse:
+    {
+        TStatusInfo* sMsg = (TStatusInfo*)data;
         if (sMsg->status == Connected)
         {
             devStatus = Connected;
@@ -365,7 +404,7 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
                 (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
 
             strcpy_s(MyID, sMsg->myCID);
-            std::cout << "Lonin Success - ID : "<< MyID << std::endl;
+            std::cout << "Lonin Success - ID : " << MyID << std::endl;
 
             TCommandOnly* msg = (TCommandOnly*)std::malloc(sizeof(TCommandOnly));
             if (msg != NULL)
@@ -377,10 +416,10 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
         }
         else
         {
+            devStatus = Disconnected;
             PostMessage(hWndMain, WM_COMMAND, (WPARAM)IDM_LOGOUT, 0);
             std::cout << "Lonin Failed " << std::endl;
         }
-
         break;
     }
     case LogoutResponse:
