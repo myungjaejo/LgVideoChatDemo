@@ -170,7 +170,7 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     memcpy(login.passwordHash, PasswdHash, 64);
                     // MessageBox(hwnd, TEXT("BUTTON_LOGIN"), TEXT("TEST"), MB_OK | MB_ICONEXCLAMATION);
                     sendMsgtoACS((char*) &login, sizeof(login));
-                    DestroyWindow(hwnd);
+                    //DestroyWindow(hwnd);
                     break;
                 }
                 case BUTTON_REGISTER:
