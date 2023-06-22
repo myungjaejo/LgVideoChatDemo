@@ -170,7 +170,6 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     memcpy(login.passwordHash, PasswdHash, 64);
                     // MessageBox(hwnd, TEXT("BUTTON_LOGIN"), TEXT("TEST"), MB_OK | MB_ICONEXCLAMATION);
                     sendMsgtoACS((char*) &login, sizeof(login));
-                    //DestroyWindow(hwnd);
                     break;
                 }
                 case BUTTON_REGISTER:
@@ -192,15 +191,14 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         }
         case WM_DESTROY:
         {
-            PostMessage(hWndMain, WM_CLOSE_ACSCONNECT, 0, 0);
             DestroyWindow(hwnd);
             //PostQuitMessage(0);
             return 0;
         }
         case WM_CLOSE: 
         {
-            //PostQuitMessage(0);
-            PostMessage(hWndMain, WM_CLOSE_ACSCONNECT, 0, 0);
+            if (devStatus == Disconnected)
+                PostMessage(hWndMain, WM_CLOSE_ACSCONNECT, 0, 0);
             DestroyWindow(hwnd);
             return 0;
         }
