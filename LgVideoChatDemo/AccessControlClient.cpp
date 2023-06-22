@@ -431,7 +431,6 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
             strcpy_s(MyID, rMsg->myCID);
             PostMessage(hWndMain, WM_OPEN_TWOFACTORAUTH, 0, 0);
         }
-        else
 
         break;
     }
