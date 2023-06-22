@@ -409,283 +409,334 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 	return 0;
 }
 
+void ResetAttempt(LPVOID lpArgToCompletionRoutine, DWORD dwTimerLowValue, DWORD dwTimerHighValue)
+{
+	printf("reset attempt count\n");
+	TRegistration* user = (TRegistration*)lpArgToCompletionRoutine;
+	user->LoginAttempt = 0;
+}
+
 
 static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in sockip, int socklen)
 {
 	oCommandOnly *getMsg = (oCommandOnly*) data;
 
-	switch(getMsg->MessageType)
+	switch (getMsg->MessageType)
 	{
-		case Registration:
+	case Registration:
+	{
+		// Registration
+		TRegistration* regData = (TRegistration*)data;
+		// Store Data - memory / storage
+		std::cout << "get registration infomation" << std::endl;
+
+		// macro
+		setMacro(__InputSock, regData);
+
+		if (RegistrationUserData(regData))
 		{
-			// Registration
-			TRegistration* regData = (TRegistration*)data;
-			// Store Data - memory / storage
-			std::cout << "get registration infomation" << std::endl;
-			
-			// macro
-			setMacro(__InputSock, regData);
-
-			if (RegistrationUserData(regData))
+			TCommandOnly* feedback = (TCommandOnly*)std::malloc(sizeof(TCommandOnly));
+			if (sendCommandOnlyMsg(__InputSock, sockip, socklen, true) != NULL)
 			{
-				TCommandOnly* feedback = (TCommandOnly*)std::malloc(sizeof(TCommandOnly));
-				if (sendCommandOnlyMsg(__InputSock, sockip, socklen, true) != NULL)
-				{
 
-				}
-				else
-				{
-					// TODO : ERROR
-					std::cout << "memory error - malloc" << std::endl;
-				}
 			}
 			else
 			{
-				//TODO :: ERROR
-				std::cout << "Full data error" << std::endl;
+				// TODO : ERROR
+				std::cout << "memory error - malloc" << std::endl;
 			}
-
-			//StoreData()
-
-			// update IP info
-
-			break;
 		}
-		case Login:
+		else
 		{
-			// Login
-			TLogin* LoginData = (TLogin*)data;
-			TStatus resp = Disconnected;
-			std::cout << "email :" << LoginData->email << ", pwhash : " << LoginData->passwordHash << std::endl;
+			//TODO :: ERROR
+			std::cout << "Full data error" << std::endl;
+		}
 
-			char myCID[NAME_BUFSIZE] = "None";
-			std::vector<TRegistration*>::iterator iter;
-			for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
+		//StoreData()
+
+		// update IP info
+
+		break;
+	}
+	case Login:
+	{
+		// Login
+		TLogin* LoginData = (TLogin*)data;
+		TStatus resp = Disconnected;
+		std::cout << "email :" << LoginData->email << ", pwhash : " << LoginData->passwordHash << std::endl;
+
+		char myCID[NAME_BUFSIZE] = "None";
+
+		std::vector<TRegistration*>::iterator iter;
+		for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
+		{
+			// need to implement compare email and pwhash !!
+			TStatusInfo* feedback = (TStatusInfo*)std::malloc(sizeof(TStatusInfo));
+
+			if (!strncmp((*iter)->email, LoginData->email, (*iter)->EmailSize))
 			{
-				// need to implement compare email and pwhash !!
-				TStatusInfo* feedback = (TStatusInfo*)std::malloc(sizeof(TStatusInfo));
-				
-				if (!strncmp((*iter)->email, LoginData->email, (*iter)->EmailSize))
+				if (!strncmp((*iter)->password, LoginData->passwordHash, (*iter)->PasswordSize))
 				{
-					if (!strncmp((*iter)->password, LoginData->passwordHash, (*iter)->PasswordSize))
-					{						
-						//resp = Connected;
-						
-						//strcpy_s(myCID, (*iter)->ContactID);
+					//resp = Connected;
 
-						//std::vector<TSocketManager>::iterator iitt;
-						//for (iitt = sockmng.begin(); iitt != sockmng.end(); iitt++)
-						//{
-						//	//std::cout << "search "
-						//	if ((*iitt).ASocket == __InputSock)
-						//	{
-						//		strcpy_s((*iitt).Owner, myCID);
-						//		strcpy_s((*iter)->LastIPAddress, (*iitt).IPAddr);
-						//		std::cout << "Login Information : " << (*iter)->email << " / " << myCID << " / " << (*iitt).IPAddr << std::endl;
-						//		break;
-						//	}
-						//}
+					//strcpy_s(myCID, (*iter)->ContactID);
 
-						resp = VaildTwoFactor;
-						strcpy_s(myCID, (*iter)->ContactID);
-						SendTFA(LoginData->email);
+					//std::vector<TSocketManager>::iterator iitt;
+					//for (iitt = sockmng.begin(); iitt != sockmng.end(); iitt++)
+					//{
+					//	//std::cout << "search "
+					//	if ((*iitt).ASocket == __InputSock)
+					//	{
+					//		strcpy_s((*iitt).Owner, myCID);
+					//		strcpy_s((*iter)->LastIPAddress, (*iitt).IPAddr);
+					//		std::cout << "Login Information : " << (*iter)->email << " / " << myCID << " / " << (*iitt).IPAddr << std::endl;
+					//		break;
+					//	}
+					//}
+
+					(*iter)->LoginAttempt = 0;
+					resp = VaildTwoFactor;
+					strcpy_s(myCID, (*iter)->ContactID);
+					SendTFA(LoginData->email);
+					break;
+				}
+				else
+				{
+					(*iter)->LoginAttempt += 1;
+					if ((*iter)->LoginAttempt > MAX_ALLOW_LOGIN_ATTEMPT)
+					{
+						std::cout << "Login restricted - Too Many Login attempt" << std::endl;
+						HANDLE hTimer = CreateWaitableTimer(NULL, FALSE, NULL);
+
+						if (!hTimer) {
+							printf("hTimer is null\n");
+							break;
+						}
+
+						LARGE_INTEGER dueTime;
+						dueTime.QuadPart = -10000000000;
+						SetWaitableTimer(hTimer, &dueTime, 0, ResetAttempt, (LPVOID)(*iter), FALSE);
+						DWORD result = WaitForSingleObject(hTimer, INFINITE);
 						break;
 					}
 				}
 			}
-			std::cout << "send login response to "<< resp << " in "  << myCID << " and " << sockmng.size() << ", evt : "  << NumEvents << std::endl;
-			sendStatusMsg(__InputSock, sockip, socklen, myCID, resp);
-
-			break;
 		}
-		case TwoFactorRequest:
+
+		std::cout << "send login response to " << resp << " in " << myCID << " and " << sockmng.size() << ", evt : " << NumEvents << std::endl;
+		sendStatusMsg(__InputSock, sockip, socklen, myCID, resp);
+
+		break;
+	}
+	case TwoFactorRequest:
+	{
+		TTwoFactor* tMsg = (TTwoFactor*)data;
+		TStatus resp = Disconnected;
+		char myCID[NAME_BUFSIZE] = "None";
+		std::cout << "RECEIVED TOKEN : " << tMsg->TFA << std::endl;
+		int iResult = ReadTFA(tMsg->TFA);
+		if (iResult == TFA_SUCCESS)
 		{
-			TTwoFactor* tMsg = (TTwoFactor *) data;
-			TStatus resp = Disconnected;
-			char myCID[NAME_BUFSIZE] = "None";
-			std::cout << "RECEIVED TOKEN : " << tMsg->TFA << std::endl;
-			int iResult = ReadTFA(tMsg->TFA);
-			if (iResult == TFA_SUCCESS)
+			resp = Connected;
+			strcpy_s(myCID, tMsg->myCID);
+
+			std::vector<TSocketManager>::iterator iitt;
+			for (iitt = sockmng.begin(); iitt != sockmng.end(); iitt++)
 			{
-				resp = Connected;
-				strcpy_s(myCID, tMsg->myCID);
+				//std::cout << "search "
+				if ((*iitt).ASocket == __InputSock)
+				{
+					std::vector<TRegistration*>::iterator iter;
+					for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
+					{
+						if (!strcmp((*iter)->ContactID, myCID))
+						{
+							strcpy_s((*iitt).Owner, myCID);
+							strcpy_s((*iter)->LastIPAddress, (*iitt).IPAddr);
+							std::cout << "Login Information : " << (*iter)->email << " / " << myCID << " / " << (*iitt).IPAddr << std::endl;
+							break;
+						}
+					}
+					if (iter == controlDevices.end())
+					{
+						std::cout << "Can't find user" << std::endl;
+					}
+					break;
+				}
+			}
+			TStatusInfo* feedback = (TStatusInfo*)std::malloc(sizeof(TStatusInfo));
+			if (feedback != NULL)
+			{
+				feedback->MessageType = TwoFactorResponse;
+				feedback->status = Connected;
+				strcpy_s(feedback->myCID, myCID);
+				sendto(__InputSock, (char*)feedback, sizeof(TStatusInfo), 0, (sockaddr*)&sockip, socklen);
+				free(feedback);
+				return true;
+			}
+		}
+		else
+		{
+			std::cout << "Wrong Value" << std::endl;
+			TStatusInfo* feedback = (TStatusInfo*)std::malloc(sizeof(TStatusInfo));
+			if (feedback != NULL)
+			{
+				feedback->MessageType = TwoFactorResponse;
+				feedback->status = Disconnected;
+				strcpy_s(feedback->myCID, myCID);
+				sendto(__InputSock, (char*)feedback, sizeof(TStatusInfo), 0, (sockaddr*)&sockip, socklen);
+				free(feedback);
+				return true;
+			}
+		}
+		break;
+	}
+	case RequestStatus:
+	{
+		break;
+	}
+	case SendStatus:
+	{
+		break;
+	}
+
+	case RequestContactList:
+	{
+		TContactList clist{};
+		clist.MessageType = SendContactList;
+		clist.ListSize = (char)0;
+		strcpy_s(clist.ListBuf, "");
+		// Load stored data
+		std::vector<TRegistration*>::iterator iter;
+		for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
+		{
+			strcat_s(clist.ListBuf, (*iter)->ContactID);
+			strcat_s(clist.ListBuf, "/");
+			clist.ListSize += 1;
+		}
+		std::cout << "merge data : " << clist.ListBuf << std::endl;
+		// send contact list
+		sendto(__InputSock, (char*)&clist, sizeof(clist), 0, (sockaddr*)&sockip, socklen);
+
+		break;
+	}
+	case RequestCall:
+	{
+		TDeviceID* tmp = (TDeviceID*)data;
+		char* fromDev = tmp->FromDevID;
+		char* dev_id = tmp->ToDevID;
+		std::cout << "Call request to " << dev_id << std::endl;
+		std::vector<TSocketManager>::iterator iit;
+		for (iit = sockmng.begin(); iit != sockmng.end(); iit++)
+		{
+			std::cout << "socket info : " << (*iit).Owner << " -> " << (*iit).IPAddr << std::endl;
+		}
+
+		// Load stored IP_addres of Receiver
+		std::vector<TRegistration*>::iterator iter;
+		for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
+		{
+			if (!strncmp(dev_id, (*iter)->ContactID, NAME_BUFSIZE))
+			{
+				TDeviceID msg{};
+				msg.MessageType = RequestCall;
+
+				strcpy_s(msg.FromDevID, fromDev);
+				strcpy_s(msg.ToDevID, dev_id);
 
 				std::vector<TSocketManager>::iterator iitt;
 				for (iitt = sockmng.begin(); iitt != sockmng.end(); iitt++)
 				{
-					//std::cout << "search "
-					if ((*iitt).ASocket == __InputSock)
+					if (!strcmp((*iitt).Owner, (*iter)->ContactID))
 					{
-						std::vector<TRegistration*>::iterator iter;
-						for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
-						{
-							if (!strcmp((*iter)->ContactID, myCID))
-							{
-								strcpy_s((*iitt).Owner, myCID);
-								strcpy_s((*iter)->LastIPAddress, (*iitt).IPAddr);
-								std::cout << "Login Information : " << (*iter)->email << " / " << myCID << " / " << (*iitt).IPAddr << std::endl;
-								break;
-							}
-						}
-						if (iter == controlDevices.end())
-						{
-							std::cout << "Can't find user" << std::endl;
-						}
+						std::cout << "transfer request : " << msg.FromDevID << " -> " << msg.ToDevID << " / " << (*iitt).IPAddr << std::endl;
+						int ret = send((*iitt).ASocket, (char*)&msg, sizeof(msg), 0);
+						std::cout << (*iitt).ASocket << ", " << ret << std::endl;
 						break;
 					}
 				}
-				TStatusInfo* feedback = (TStatusInfo*)std::malloc(sizeof(TStatusInfo));
-				if (feedback != NULL)
-				{
-					feedback->MessageType = TwoFactorResponse;
-					feedback->status = Connected;
-					strcpy_s(feedback->myCID, myCID);
-					sendto(__InputSock, (char*)feedback, sizeof(TStatusInfo), 0, (sockaddr*)&sockip, socklen);
-					free(feedback);
-					return true;
-				}
 			}
-			else
-			{
-				std::cout << "Wrong Value" << std::endl;
-				TStatusInfo* feedback = (TStatusInfo*)std::malloc(sizeof(TStatusInfo));
-				if (feedback != NULL)
-				{
-					feedback->MessageType = TwoFactorResponse;
-					feedback->status = Disconnected;
-					strcpy_s(feedback->myCID, myCID);
-					sendto(__InputSock, (char*)feedback, sizeof(TStatusInfo), 0, (sockaddr*)&sockip, socklen);
-					free(feedback);
-					return true;
-				}
-			}
-			break;
-		}
-		case RequestStatus:
-		{
-			break;
-		}
-		case SendStatus:
-		{
-			break;
 		}
 
-		case RequestContactList:
-		{
-			TContactList clist{};
-			clist.MessageType = SendContactList;
-			clist.ListSize = (char)0;
-			strcpy_s(clist.ListBuf, "");
-			// Load stored data
-			std::vector<TRegistration*>::iterator iter;
-			for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
-			{				
-				strcat_s(clist.ListBuf, (*iter)->ContactID);
-				strcat_s(clist.ListBuf, "/");
-				clist.ListSize += 1;
-			}
-			std::cout << "merge data : " << clist.ListBuf << std::endl;
-			// send contact list
-			sendto(__InputSock, (char*)&clist, sizeof(clist), 0, (sockaddr*)&sockip, socklen);	
+		break;
+	}
+	case AcceptCall:
+	{
+		TDeviceID* tmp = (TDeviceID*)data;
+		char* fromDev = tmp->FromDevID;
+		char* dev_id = tmp->ToDevID;
+		std::cout << "Call Accepted from " << fromDev << " to " << dev_id << std::endl;
 
-			break;
+		TAcceptCall msg{};
+		msg.MessageType = AcceptCall;
+
+		std::vector<TSocketManager>::iterator iter;
+		for (iter = sockmng.begin(); iter != sockmng.end(); iter++)
+		{
+			if (!strncmp(fromDev, (*iter).Owner, NAME_BUFSIZE))
+			{
+				strcpy_s(msg.IPAddress, (*iter).IPAddr);
+				break;
+			}
 		}
-		case RequestCall:
+
+		for (iter = sockmng.begin(); iter != sockmng.end(); iter++)
 		{
-			TDeviceID* tmp = (TDeviceID*)data;
-			char* fromDev = tmp->FromDevID;
-			char* dev_id = tmp->ToDevID;
-			std::cout << "Call request to "<< dev_id << std::endl;
-			std::vector<TSocketManager>::iterator iit;
-			for (iit = sockmng.begin(); iit != sockmng.end(); iit++)
+			if (!strncmp(dev_id, (*iter).Owner, NAME_BUFSIZE))
 			{
-				std::cout << "socket info : " << (*iit).Owner << " -> " << (*iit).IPAddr << std::endl;
-			}
-
-			// Load stored IP_addres of Receiver
-			std::vector<TRegistration*>::iterator iter;
-			for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
-			{
-				if (!strncmp(dev_id, (*iter)->ContactID, NAME_BUFSIZE))
-				{
-					TDeviceID msg{};
-					msg.MessageType = RequestCall;
-
-					strcpy_s(msg.FromDevID, fromDev);
-					strcpy_s(msg.ToDevID, dev_id);
-
-					std::vector<TSocketManager>::iterator iitt;
-					for (iitt = sockmng.begin(); iitt != sockmng.end(); iitt++)
-					{
-						if (!strcmp((*iitt).Owner, (*iter)->ContactID))
-						{
-							std::cout << "transfer request : " << msg.FromDevID << " -> " << msg.ToDevID << " / " << (*iitt).IPAddr << std::endl;
-							int ret = send((*iitt).ASocket, (char*)&msg, sizeof(msg), 0);
-							std::cout << (*iitt).ASocket << ", " << ret << std::endl;
-							break;
-						}
-					}
-				}
-			}
-
-			break;
-		}
-		case AcceptCall:
-		{
-			TDeviceID* tmp = (TDeviceID*)data;
-			char* fromDev = tmp->FromDevID;
-			char* dev_id = tmp->ToDevID;
-			std::cout << "Call Accepted from "<< fromDev<< " to " << dev_id << std::endl;
-
-			TAcceptCall msg{};
-			msg.MessageType = AcceptCall;
-
-			std::vector<TSocketManager>::iterator iter;
-			for (iter = sockmng.begin(); iter != sockmng.end(); iter++)
-			{
-				if (!strncmp(fromDev, (*iter).Owner, NAME_BUFSIZE))
-				{
-					strcpy_s(msg.IPAddress, (*iter).IPAddr);
-					break;
-				}
-			}
-
-			for (iter = sockmng.begin(); iter != sockmng.end(); iter++)
-			{
-				if (!strncmp(dev_id, (*iter).Owner, NAME_BUFSIZE))
-				{
-					strcpy_s(msg.FromDevID, fromDev);
-					strcpy_s(msg.ToDevID, dev_id);
-					
-					send((*iter).ASocket, (char*)&msg, sizeof(msg), 0);
-					std::cout << "Accept call : " << msg.FromDevID << " -> " << msg.ToDevID << " / " << msg.IPAddress << std::endl;
-					break;
-				}
-			}
-			
-			break;
-		}
-		case RejectCall:
-		{
-			TDeviceID* tmp = (TDeviceID*)data;
-			char* fromDev = tmp->FromDevID;
-			char* dev_id = tmp->ToDevID;
-			std::cout << "Call rejected from " << fromDev << " to " << dev_id << std::endl;
-			sockaddr_in sockto;
-			int iResult = findReceiverIP(fromDev, &sockto);
-			if (iResult != 0)
-			{
-				TDeviceID msg{};
-				msg.MessageType = RejectCall;
-
 				strcpy_s(msg.FromDevID, fromDev);
 				strcpy_s(msg.ToDevID, dev_id);
-				sendto(__InputSock, (char*)&msg, sizeof(msg), 0, (sockaddr*)&sockto, iResult);
+
+				send((*iter).ASocket, (char*)&msg, sizeof(msg), 0);
+				std::cout << "Accept call : " << msg.FromDevID << " -> " << msg.ToDevID << " / " << msg.IPAddress << std::endl;
+				break;
 			}
-			break;
 		}
-		default:
-			break;
+
+		break;
+	}
+	case RejectCall:
+	{
+		TDeviceID* tmp = (TDeviceID*)data;
+		char* fromDev = tmp->FromDevID;
+		char* dev_id = tmp->ToDevID;
+		std::cout << "Call rejected from " << fromDev << " to " << dev_id << std::endl;
+		sockaddr_in sockto;
+		int iResult = findReceiverIP(fromDev, &sockto);
+		if (iResult != 0)
+		{
+			TDeviceID msg{};
+			msg.MessageType = RejectCall;
+
+			strcpy_s(msg.FromDevID, fromDev);
+			strcpy_s(msg.ToDevID, dev_id);
+			sendto(__InputSock, (char*)&msg, sizeof(msg), 0, (sockaddr*)&sockto, iResult);
+		}
+		break;
+	}
+	case MissedCall:
+	{
+		TReqwithMessage* req = (TReqwithMessage*)data;
+		TMissedCall rsp{};
+
+		rsp.MessageType = MissedCall;
+		rsp.ListSize = MAX_DEVSIZE;
+
+		int i = 0;
+		for (TRegistration* user : controlDevices) {
+			if (!strncmp((const char*)req->Message, user->email, req->MessageLen)) {
+				memcpy(rsp.ListBuf[i], user->MissedCall, strlen((const char*)user->MissedCall));
+				break;
+			}
+			i++;
+		}
+
+		int sent = sendto(__InputSock, (char*)&rsp, sizeof(TMissedCall), 0, (sockaddr*)&sockip, socklen);
+		break;
+	}
+
+	default:
+		break;
 	}
 	return 0;
 }

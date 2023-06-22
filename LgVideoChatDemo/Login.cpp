@@ -158,8 +158,8 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     }
 
                     char PasswdHash[65];
-
-                    SHA256Hash(Passwd, _tcslen(Passwd), PasswdHash);
+                    size_t len = _tcslen(Passwd);
+                    SHA256Hash(Passwd, len, PasswdHash);
                     std::cout << "SHA-256 : " << PasswdHash << std::endl;
 
                     TLogin login{};
