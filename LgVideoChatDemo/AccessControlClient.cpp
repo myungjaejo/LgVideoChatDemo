@@ -437,9 +437,15 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
     }
     case ChangePasswordResponse:
     {
-         
+        PostMessage(hWndMain, WM_OPEN_REREGPASSWORD, 0, 0);
         break;
     }
+    case ReRegPasswordResponse:
+    {
+        std::cout << "passwd chaged" << std::endl;
+        break;
+    }
+
     case LogoutResponse:
     {
         break;

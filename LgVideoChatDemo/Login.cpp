@@ -10,6 +10,7 @@
 #include "AccessControlClient.h"
 #include "AccessControlServer.h"
 #include "ContactList.h"
+#include "ForgetPassword.h"
 
 #define BUTTON_LOGIN 300
 #define BUTTON_REGISTER 301
@@ -180,7 +181,8 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 }
                 case BUTTON_FORGETPASSWD:
                 {
-                    MessageBox(hwnd, TEXT("BUTTON_FORGETPASSWD"), TEXT("TEST"), MB_OK | MB_ICONEXCLAMATION);
+                    //MessageBox(hwnd, TEXT("BUTTON_FORGETPASSWD"), TEXT("TEST"), MB_OK | MB_ICONEXCLAMATION);
+                    CreateResetPasswordWindow(hwnd);
                     break;
                 }
 

@@ -5,6 +5,7 @@
 #include "definition.h"
 #include "Login.h"
 #include "AccessControlClient.h"
+#include "LgVideoChatDemo.h"
 
 extern void SHA256Hash(const TCHAR* input, size_t inputLength, char* output);
 
@@ -51,7 +52,7 @@ LRESULT CALLBACK ReRegisterProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
         {
             TCHAR Passwd[maxLength] = TEXT("");
             TCHAR ConfirmPasswd[maxLength] = TEXT("");
-            TCHAR ContactID[maxLength] = TEXT("");
+            //TCHAR ContactID[maxLength] = TEXT("");
 
             GetWindowText(hwndReRegisterPassword, Passwd, maxLength);
             GetWindowText(hwndReRegisterConfirmPassword, ConfirmPasswd, maxLength);
@@ -70,7 +71,10 @@ LRESULT CALLBACK ReRegisterProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
             TReRegistration* msg = (TReRegistration*)std::malloc(sizeof(TReRegistration));
             if (msg != NULL)
             {
+                std::cout << " Re-Registration process - myID : " << MyID << std::endl;
                 msg->MessageType = ReRegPasswordRequest;
+
+                strcpy_s(msg->email, MyID);
                 memset(msg->password, 0, 256);
 
                 char PasswdHash[65];

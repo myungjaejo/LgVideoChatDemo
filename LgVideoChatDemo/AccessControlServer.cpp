@@ -727,6 +727,36 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 				feedback->status = Disconnected;
 				std::cout << "Wrong Value - ret : " << iResult << std::endl;
 			}
+
+			if (feedback != NULL)
+			{
+				feedback->MessageType = ChangePasswordResponse;
+				sendto(__InputSock, (char*)feedback, sizeof(TStatusInfo), 0, (sockaddr*)&sockip, socklen);
+				free(feedback);
+			}
+
+			break;
+		}
+
+		case ReRegPasswordRequest:
+		{
+			TReRegistration* msg = (TReRegistration*)data;
+			TStatus resp = Disconnected;
+
+			std::vector<TRegistration*>::iterator iter;
+			for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
+			{
+				if (!strcmp(msg->email, (*iter)->email))
+				{
+					std::cout << "Re-Registration Password to " << (*iter)->email << std::endl;
+					memcpy((*iter)->password, msg->password, msg->PasswordSize);
+					break;
+				}
+			}
+
+			TStatusInfo* feedback = (TStatusInfo*)std::malloc(sizeof(TStatusInfo));
+
+
 			if (feedback != NULL)
 			{
 				feedback->MessageType = ChangePasswordResponse;
