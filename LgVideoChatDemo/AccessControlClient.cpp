@@ -31,6 +31,7 @@ static DWORD ThreadACClientID;
 static DWORD WINAPI ThreadACClient(LPVOID ivalue);
 static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in sockip, int socklen);
 static int OnConnect(char* IPAddr);
+extern HWND hwndCreateRegister, hwndLogin;
 
 static void AccessControlClientSetExitEvent(void)
 {
@@ -351,6 +352,14 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
         // Registration
         std::cout << "registed User Information " << std::endl;
 
+        if (getMsg->answer) {
+            SendMessage(hwndCreateRegister, WM_DESTROY, 0, 0);
+            MessageBox(NULL, L"Registered Successfully", L"", MB_OK);
+        }
+        else {
+            MessageBox(NULL, L"Registration Failed", L"", MB_OK);
+        }
+
         break;
     }
     case LoginResponse:
@@ -381,6 +390,7 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
             //SendTFA(sMsg->myCID);
             strcpy_s(MyID, sMsg->myCID);
             PostMessage(hWndMain, WM_OPEN_TWOFACTORAUTH, 0, 0);
+            PostMessage(hwndLogin, WM_DESTROY, 0, 0);
         }
         else
         {
