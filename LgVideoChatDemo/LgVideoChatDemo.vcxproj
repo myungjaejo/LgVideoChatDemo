@@ -150,6 +150,7 @@
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="TcpSendRecv.h" />
+    <ClInclude Include="TimeUtil.h" />
     <ClInclude Include="TwoFactorAuth.h" />
     <ClInclude Include="TwoFactorAuthModule.h" />
     <ClInclude Include="VideoClient.h" />
@@ -175,6 +176,7 @@
     <ClCompile Include="NotifyCall.cpp" />
     <ClCompile Include="Register.cpp" />
     <ClCompile Include="TcpSendRecv.cpp" />
+    <ClCompile Include="TimeUtil.cpp" />
     <ClCompile Include="TwoFactorAuth.cpp" />
     <ClCompile Include="TwoFactorAuthModule.cpp" />
     <ClCompile Include="VideoClient.cpp" />

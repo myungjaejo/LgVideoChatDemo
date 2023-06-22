@@ -26,6 +26,7 @@
 #include "ContactList.h"
 #include "NotifyCall.h"
 #include "TwoFactorAuthModule.h"
+#include "TimeUtil.h"
 
 #pragma comment(lib,"comctl32.lib")
 #ifdef _DEBUG
