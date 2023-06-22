@@ -4,7 +4,9 @@
 #include <wincrypt.h>
 #include <tchar.h>
 #include <regex>
-#include "definition.h"
+#include <Commctrl.h>
+//#include "definition.h"
+#include "LgVideoChatDemo.h"
 #include "AccessControlClient.h"
 #include "AccessControlServer.h"
 #include "ContactList.h"
@@ -22,12 +24,24 @@ extern void CreateForgetPasswd(HWND phwnd);
 
 const int maxEmailLength = 30;
 const int maxPasswdLength = 30;
-HWND hwndLogin, hwndEmail, hwndPassword;
+HWND hwndEmail, hwndPassword, hwndLogin, hwndRegister, hwndForgetPasswd;
 HWND hwndParent;
 
 bool IsLogin = false;
 
 extern HINSTANCE hInst;
+
+bool isAdmin(const TCHAR* Email, const TCHAR* Passwd)
+{
+    if (!_tcscmp(Email, TEXT("admin")))
+    {
+        if (!_tcscmp(Passwd, TEXT("admin123")))
+        {
+            return true;
+        }
+    }
+    return false;
+}
 
 bool HasConsecutiveCharacters(const TCHAR* password) {
     const int consecutiveLimit = 3;
@@ -149,6 +163,15 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     GetWindowText(hwndPassword, Passwd, maxPasswdLength);
                     printf("ID : %ls\nPASSWD : %ls\n", Email, Passwd);
 
+                    if (isAdmin(Email, Passwd))
+                    {
+                        devStatus = Server;
+                        SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_START_SERVER,
+                            (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
+                        DestroyWindow(hwnd);
+                        return 1;
+                    }
+
                     if (!ValidateEmailAddress(Email))
                     {
                         MessageBox(hwnd, TEXT("INVALID EMAIL FORMAT"), TEXT("ERROR"), MB_OK | MB_ICONEXCLAMATION);
@@ -213,7 +236,8 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         }
         case WM_CLOSE: 
         {
-            //PostQuitMessage(0);
+            if (devStatus == Disconnected)
+                PostMessage(hWndMain, WM_CLOSE_ACSCONNECT, 0, 0);
             DestroyWindow(hwnd);
             return 0;
         }

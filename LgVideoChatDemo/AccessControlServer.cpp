@@ -10,6 +10,14 @@
 #include <vector>
 #include "filemanager.h"
 #include <openssl/ssl.h>
+#include <chrono>
+
+
+#include "LgVideoChatDemo.h"
+#include "TcpSendRecv.h"
+#include "filemanager.h"
+#include "VideoServer.h"
+#include "TwoFactorAuth.h"
 
 #pragma comment(lib, "libssl.lib")
 #pragma comment(lib, "libcrypto.lib")
@@ -29,18 +37,60 @@ static bool Loopback = false;
 static DWORD ThreadACServerID;
 static int NumEvents;
 
+typedef struct oSocketManager {
+	char	IPAddr[IP_BUFFSIZE];
+	char	Owner[NAME_BUFSIZE];
+	SOCKET	ASocket;
+	HANDLE	AcceptEvent;
+    SSL *ssl;
+}TSocketManager;
+
 static std::vector<TRegistration *> controlDevices;
+static std::vector<TSocketManager> sockmng;
 
 static void CleanUpACServer(void);
 static DWORD WINAPI ThreadACServer(LPVOID ivalue);
-static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in sockip, int socklen);
+static int RecvHandler(TSocketManager *smgr, char* data, int datasize, sockaddr_in sockip, int socklen);
 bool RegistrationUserData(TRegistration* data);
-
+bool RegistrationToFile(void);
+char* getFromAddr(SOCKET __InputSock);
+void setMacro(SOCKET __InputSock, TRegistration* regData);
+bool sendCommandOnlyMsg(TSocketManager *smgr, sockaddr_in sockip, int socklen, bool answer);
+bool sendStatusMsg(TSocketManager *smgr, sockaddr_in sockip, int socklen, char* cid, TStatus status);
+int findReceiverIP(char* recID, sockaddr_in* out);
 SSL* ssl;
+SSL_CTX* sslContext;
+
+int verify_callback(int preverify_ok, X509_STORE_CTX* ctx);
+void log_callback(const SSL* ssl, int where, int ret);
 
 // start Server
 bool StartACServer(bool &Loopback)
 {
+
+	SSL_library_init();
+	SSL_load_error_strings();
+	sslContext = SSL_CTX_new(SSLv23_server_method());
+	SSL_CTX_set_verify(sslContext, SSL_VERIFY_PEER, verify_callback);
+	SSL_CTX_set_info_callback(sslContext, log_callback);
+	if (sslContext == NULL)
+	{
+		fprintf(stderr, "Failed to create SSL context.\n");
+		return 1;
+	}
+
+	if (SSL_CTX_use_certificate_file(sslContext, "server.crt", SSL_FILETYPE_PEM) != 1)
+	{
+		fprintf(stderr, "Failed to load server certificate.\n");
+		return 1;
+	}
+	if (SSL_CTX_use_PrivateKey_file(sslContext, "server.key", SSL_FILETYPE_PEM) != 1)
+	{
+		fprintf(stderr, "Failed to load server private key.\n");
+		return 1;
+	}
+	std::cout << "load key done" << std::endl;
+
 	if (hThreadACServer == INVALID_HANDLE_VALUE)
 	{
 		hThreadACServer = CreateThread(NULL, 0, ThreadACServer, 0, 0, &ThreadACServerID);
@@ -100,34 +150,49 @@ static void CleanUpACServer(void)
 		closesocket(Accepter);
 		Accepter = INVALID_SOCKET;
 	}
+
+	static std::vector<TSocketManager>::iterator iter;
+	for (iter = sockmng.begin(); iter != sockmng.end(); iter++)
+	{
+		closesocket((*iter).ASocket);
+		CloseHandle((*iter).AcceptEvent);
+	}
+	sockmng.clear();
+
+	RegistrationToFile();
+	controlDevices.clear();
 }
 
-static void CloseConnection(void)
-{
-	if (Accepter != INVALID_SOCKET)
+static void CloseConnectionACS(SOCKET __InputSock)
+{	
+	static std::vector<TSocketManager>::iterator iter;
+	for (iter = sockmng.begin(); iter != sockmng.end(); iter++)
 	{
-		closesocket(Accepter);
-		Accepter = INVALID_SOCKET;
+		if ((*iter).ASocket == __InputSock)
+			break;
 	}
-	NumEvents = 2;
+
+	if ((*iter).ASocket != INVALID_SOCKET)
+	{
+		closesocket((*iter).ASocket);
+		(*iter).ASocket = INVALID_SOCKET;
+		//PostMessage(hWndMain, WM_REMOTE_LOST, 0, 0);
+	}
+	sockmng.erase(iter);
+	NumEvents -= 1;
 }
 
-int verify_callback(int preverify_ok, X509_STORE_CTX* ctx)
+
+
+static void CloseConnection(SOCKET __InputSock)
 {
-	if (preverify_ok == 0)
+	if (__InputSock != INVALID_SOCKET)
 	{
-		int depth = X509_STORE_CTX_get_error_depth(ctx);
-		int err = X509_STORE_CTX_get_error(ctx);
-
-		if (depth == 0 && err == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT)
-		{
-			return 1;
-		}
-
-		return 0;
+		closesocket(__InputSock);
+		__InputSock = INVALID_SOCKET;
+		PostMessage(hWndMain, WM_REMOTE_LOST, 0, 0);
 	}
-
-	return 1;
+	NumEvents -= 1;
 }
 
 void log_callback(const SSL* ssl, int where, int ret)
@@ -188,27 +253,6 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 		return 1;
 	}
 
-	SSL_library_init();
-	SSL_load_error_strings();
-	SSL_CTX* sslContext = SSL_CTX_new(SSLv23_server_method());
-	SSL_CTX_set_verify(sslContext, SSL_VERIFY_PEER, verify_callback);
-	SSL_CTX_set_info_callback(sslContext, log_callback);
-	if (sslContext == NULL)
-	{
-		fprintf(stderr, "Failed to create SSL context.\n");
-		return 1;
-	}
-
-	if (SSL_CTX_use_certificate_file(sslContext, "server.crt", SSL_FILETYPE_PEM) != 1)
-	{
-		fprintf(stderr, "Failed to load server certificate.\n");
-		//return 1;
-	}
-	if (SSL_CTX_use_PrivateKey_file(sslContext, "server.key", SSL_FILETYPE_PEM) != 1)
-	{
-		fprintf(stderr, "Failed to load server private key.\n");
-		//return 1;
-	}
 
 	InternetAddr.sin_family = AF_INET;
 	inet_pton(AF_INET, ACS_IP, &InternetAddr.sin_addr.s_addr);
@@ -283,8 +327,11 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 					}
 					else
 					{
-						if (Accepter == INVALID_SOCKET)
-						{
+						//if (sockmng.size() == 0); //if (Accepter == INVALID_SOCKET)
+						//{
+							std::cout << "Try Accepted Connection " << std::endl;
+							TSocketManager tmp{};
+
 							struct sockaddr_storage sa;
 							socklen_t sa_len = sizeof(sa);
 							char RemoteIp[INET6_ADDRSTRLEN];
@@ -292,7 +339,12 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 							LARGE_INTEGER liDueTime;
 
 							// Accept a new connection, and add it to the socket and event lists
-							Accepter = accept(Listener, (struct sockaddr*)&sa, &sa_len);
+							tmp.ASocket = accept(Listener, (struct sockaddr*)&sa, &sa_len);
+
+							if (tmp.ASocket == INVALID_SOCKET)
+							{
+								std::cout << "Accept Failed " << std::endl;
+							}
 
 							ssl = SSL_new(sslContext);
 
@@ -302,7 +354,7 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 								return 1;
 							}
 
-							if (SSL_set_fd(ssl, Accepter) != 1)
+							if (SSL_set_fd(ssl, tmp.ASocket) != 1)
 							{
 								fprintf(stderr, "Failed to bind SSL socket.\n");
 								return 1;
@@ -315,19 +367,26 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 								return 1;
 							}
 
+							tmp.ssl = ssl;
+
 							int err = getnameinfo((struct sockaddr*)&sa, sa_len, RemoteIp, sizeof(RemoteIp), 0, 0, NI_NUMERICHOST);
 							if (err != 0) {
 								snprintf(RemoteIp, sizeof(RemoteIp), "invalid address");
 							}
 							else
 							{
-								std::cout << "Accepted Connection " << RemoteIp << std::endl;
+								std::cout << "Accepted Connection " << RemoteIp << " at " << tmp.ASocket << std::endl;
+								strcpy_s(tmp.IPAddr, RemoteIp);
 							}
 
-							hAccepterEvent = WSACreateEvent();
-							WSAEventSelect(Accepter, hAccepterEvent, FD_READ | FD_WRITE | FD_CLOSE);
-							ghEvents[2] = hAccepterEvent;
-							NumEvents = 3;
+							//PostMessage(hWndMain, WM_REMOTE_CONNECT, 0, 0);
+							//hAccepterEvent = WSACreateEvent();
+							tmp.AcceptEvent = WSACreateEvent();
+							//WSAEventSelect(Accepter, hAccepterEvent, FD_READ | FD_WRITE | FD_CLOSE);
+							WSAEventSelect(tmp.ASocket, tmp.AcceptEvent, FD_READ | FD_WRITE | FD_CLOSE);							
+							ghEvents[NumEvents] = tmp.AcceptEvent;
+							sockmng.push_back(tmp);
+							NumEvents += 1;
 							/*
 							hTimer = CreateWaitableTimer(NULL, FALSE, NULL);
 							if (NULL == hTimer)
@@ -344,37 +403,16 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 							ghEvents[3] = hTimer;
 							NumEvents = 4;
 							*/
-						}
-						else
+						//}
+						/*			else
 						{
 							SOCKET Temp = accept(Listener, NULL, NULL);
-
 							if (Temp != INVALID_SOCKET)
 							{
 								closesocket(Temp);
 								std::cout << "Refused-Already Connected" << std::endl;
 							}
-
-							ssl = SSL_new(sslContext);
-							if (ssl == NULL)
-							{
-								fprintf(stderr, "Failed to create SSL socket.\n");
-								return 1;
-							}
-
-							if (SSL_set_fd(ssl, Temp) != 1)
-							{
-								fprintf(stderr, "Failed to bind SSL socket.\n");
-								return 1;
-							}
-
-							int result = SSL_accept(ssl);
-							if (result != 1)
-							{
-								fprintf(stderr, "Failed to perform SSL handshake.\n");
-								return 1;
-							}
-						}
+						}*/
 					}
 				}
 
@@ -390,16 +428,17 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 				}
 			}
 		}
-		else if (dwEvent == WAIT_OBJECT_0 + 2)
+		else if (dwEvent >= WAIT_OBJECT_0 + 2)
 		{
 			WSANETWORKEVENTS NetworkEvents;
-			if (SOCKET_ERROR == WSAEnumNetworkEvents(Accepter, hAccepterEvent, &NetworkEvents))
+			if (SOCKET_ERROR == WSAEnumNetworkEvents(sockmng[dwEvent-2].ASocket, sockmng[dwEvent - 2].AcceptEvent, &NetworkEvents))
 			{
 				std::cout << "WSAEnumNetworkEvent: " << WSAGetLastError() << " dwEvent  " << dwEvent << " lNetworkEvent " << std::hex << NetworkEvents.lNetworkEvents << std::endl;
 				NetworkEvents.lNetworkEvents = 0;
 			}
 			else
 			{
+				std::cout << "client FD_READ" << std::endl;
 				if (NetworkEvents.lNetworkEvents & FD_READ)
 				{
 					if (NetworkEvents.iErrorCode[FD_READ_BIT] != 0)
@@ -408,18 +447,16 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 					}
 					else
 					{
-						char testText[1000];
+						char testText[1024];
 						int result = 0;
 						sockaddr_in saFrom{};
 						int nFromLen = sizeof(sockaddr_in);
 						size_t recieved;
 
-						//if ((result = recvfrom(Accepter, testText, sizeof(testText), 0, (sockaddr *)&saFrom, &nFromLen)) != SOCKET_ERROR)
-						//if (SSL_read(ssl, testText, sizeof(testText) > 0))
-						if (SSL_read_ex(ssl, testText, sizeof(testText), &recieved) > 0)
+						if (SSL_read_ex(sockmng[dwEvent - 2].ssl, testText, sizeof(testText), &recieved) > 0)
 						{
 							//std::cout << "Received : " << testText << std::endl;
-							RecvHandler(Accepter, testText, recieved, saFrom, nFromLen);
+							RecvHandler(&sockmng[dwEvent - 2], testText, recieved, saFrom, nFromLen);
 							
 						}
 						else 
@@ -450,251 +487,367 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 						std::cout << "FD_CLOSE" << std::endl;
 
 					}
-					CloseConnection();
+					CloseConnectionACS(sockmng[dwEvent - 2].ASocket);
 				}
 			}
 		}
-		else if (dwEvent == WAIT_OBJECT_0 + 3)
-		{
-			unsigned int numbytes;
-			char testText[1000];
-			memcpy(testText, "Send data from AC Server", 24);
+		//else if (dwEvent == WAIT_OBJECT_0 + 3)
+		//{
+		//	unsigned int numbytes;
+		//	char testText[1000];
+		//	memcpy(testText, "Send data from AC Server", 24);
 
-			//if(send(Accepter, testText, 24, 0))
-			if (SSL_write(ssl, testText, sizeof(testText)) < 0)
-			{
-				std::cout << "WriteDataTcp sendbuff.data() Failed " << WSAGetLastError() << std::endl;
-				CloseConnection();
-			}
-			else {
-				std::cout << "WriteDataTcp sendbuff.size() Failed " << WSAGetLastError() << std::endl;
-				CloseConnection();
-			}
-	    }
+		//	if(send(Accepter, testText, 24, 0))
+		//	{
+		//		std::cout << "WriteDataTcp sendbuff.data() Failed " << WSAGetLastError() << std::endl;
+		//		CloseConnection();
+		//	}
+		//	else {
+		//		std::cout << "WriteDataTcp sendbuff.size() Failed " << WSAGetLastError() << std::endl;
+		//		CloseConnection();
+		//	}
+	 //   }
 	}
 
-	CleanUpACServer();
+	//CleanUpACServer();
 	std::cout << "Access Control Server Stopped" << std::endl;
 	return 0;
 }
 
-VOID CALLBACK ResetLoginAttempt(PVOID lpParameter, BOOLEAN TimerOrWaitFired)
+void ResetAttempt(LPVOID lpArgToCompletionRoutine, DWORD dwTimerLowValue, DWORD dwTimerHighValue)
 {
 	printf("reset attempt count\n");
-	TRegistration* user = (TRegistration*)lpParameter;
+	TRegistration* user = (TRegistration*)lpArgToCompletionRoutine;
 	user->LoginAttempt = 0;
 }
 
-static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in sockip, int socklen )
+static int RecvHandler(TSocketManager *smgr, char* data, int datasize, sockaddr_in sockip, int socklen )
 {
 	oCommandOnly *getMsg = (oCommandOnly*) data;
 
-	switch(getMsg->MessageType)
+	switch (getMsg->MessageType)
 	{
-		case Registration:
+	case Registration:
+	{
+		// Registration
+		TRegistration* regData = (TRegistration*)data;
+		// Store Data - memory / storage
+		std::cout << "get registration infomation" << std::endl;
+
+		// macro
+		setMacro(smgr->ASocket, regData);
+
+		if (RegistrationUserData(regData))
 		{
-			// Registration
-			TRegistration* regData = (TRegistration*)data;
-			// Store Data - memory / storage
-			std::cout << "get registration infomation" << std::endl;
-			if (RegistrationUserData(regData))
+			TCommandOnly* feedback = (TCommandOnly*)std::malloc(sizeof(TCommandOnly));
+			if (sendCommandOnlyMsg(smgr, sockip, socklen, true) != NULL)
 			{
-				TCommandOnly* feedback = (TCommandOnly*)std::malloc(sizeof(TCommandOnly));
-				if (feedback != NULL)
-				{
-					feedback->MessageType = RegistrationResponse;
-					feedback->answer = true;
-					//sendto(__InputSock, (char *)feedback, sizeof(TCommandOnly), 0, (sockaddr*)&sockip, socklen);
-					SSL_write(ssl, (char*)feedback, sizeof(TCommandOnly));
-					free(feedback);
-				}
-				else
-				{
-					// TODO : ERROR
-					std::cout << "memory error - malloc" << std::endl;
-				}
+
 			}
 			else
 			{
-				//TODO :: ERROR
-				std::cout << "Full data error" << std::endl;
+				// TODO : ERROR
+				std::cout << "memory error - malloc" << std::endl;
 			}
-
-			//StoreData()
-
-			// update IP info
-
-			break;
 		}
-		case Login:
+		else
 		{
-			// Login
-			TLogin* LoginData = (TLogin*)data;
-			
-			std::cout << "email :" << LoginData->email << ", pwhash : " << LoginData->passwordHash << std::endl;
+			//TODO :: ERROR
+			std::cout << "Full data error" << std::endl;
+		}
 
-			TRspWithMessage2 rsp{};
-			rsp.MessageType = (char)LoginResponse;
-			rsp.MessageLen1 = (char)strlen("Login Failed");
-			memcpy(rsp.Message1, "Login Failed", strlen("Login Failed"));
-			bool Success = false;
+		//StoreData()
 
-			for (TRegistration* user : controlDevices) {
-				std::cout << "email :" << user->email << ", pwhash : " << user->password << std::endl;
-				if (!strncmp(LoginData->email, user->email, EMAIL_BUFSIZE))
+		// update IP info
+
+		break;
+	}
+	case Login:
+	{
+		// Login
+		TLogin* LoginData = (TLogin*)data;
+		TStatus resp = Disconnected;
+		std::cout << "email :" << LoginData->email << ", pwhash : " << LoginData->passwordHash << std::endl;
+
+		char myCID[NAME_BUFSIZE] = "None";
+
+		std::vector<TRegistration*>::iterator iter;
+		for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
+		{
+			// need to implement compare email and pwhash !!
+			TStatusInfo* feedback = (TStatusInfo*)std::malloc(sizeof(TStatusInfo));
+
+			if (!strncmp((*iter)->email, LoginData->email, (*iter)->EmailSize))
+			{
+				if (!strncmp((*iter)->password, LoginData->passwordHash, (*iter)->PasswordSize))
 				{
-					if (user->LoginAttempt > MAX_ALLOW_LOGIN_ATTEMPT)
+					//resp = Connected;
+
+					//strcpy_s(myCID, (*iter)->ContactID);
+
+					//std::vector<TSocketManager>::iterator iitt;
+					//for (iitt = sockmng.begin(); iitt != sockmng.end(); iitt++)
+					//{
+					//	//std::cout << "search "
+					//	if ((*iitt).ASocket == __InputSock)
+					//	{
+					//		strcpy_s((*iitt).Owner, myCID);
+					//		strcpy_s((*iter)->LastIPAddress, (*iitt).IPAddr);
+					//		std::cout << "Login Information : " << (*iter)->email << " / " << myCID << " / " << (*iitt).IPAddr << std::endl;
+					//		break;
+					//	}
+					//}
+
+					(*iter)->LoginAttempt = 0;
+					resp = VaildTwoFactor;
+					strcpy_s(myCID, (*iter)->ContactID);
+					SendTFA(LoginData->email);
+					break;
+				}
+				else
+				{
+					(*iter)->LoginAttempt += 1;
+					if ((*iter)->LoginAttempt > MAX_ALLOW_LOGIN_ATTEMPT)
 					{
-						rsp.MessageLen1 = (char)strlen("Login restricted");
-						memcpy(&rsp.Message1, "Login restricted", strlen("Login restricted"));
+						std::cout << "Login restricted - Too Many Login attempt" << std::endl;
+						HANDLE hTimer = CreateWaitableTimer(NULL, FALSE, NULL);
+
+						if (!hTimer) {
+							printf("hTimer is null\n");
+							break;
+						}
+
+						LARGE_INTEGER dueTime;
+						dueTime.QuadPart = -10000000000;
+						SetWaitableTimer(hTimer, &dueTime, 0, ResetAttempt, (LPVOID)(*iter), FALSE);
+						DWORD result = WaitForSingleObject(hTimer, INFINITE);
 						break;
 					}
+				}
+			}
+		}
 
-					if (!strncmp(LoginData->passwordHash, user->password, PASSWORD_BUFSIZE))
+		std::cout << "send login response to " << resp << " in " << myCID << " and " << sockmng.size() << ", evt : " << NumEvents << std::endl;
+		sendStatusMsg(smgr, sockip, socklen, myCID, resp);
+
+		break;
+	}
+	case TwoFactorRequest:
+	{
+		TTwoFactor* tMsg = (TTwoFactor*)data;
+		TStatus resp = Disconnected;
+		char myCID[NAME_BUFSIZE] = "None";
+		std::cout << "RECEIVED TOKEN : " << tMsg->TFA << std::endl;
+		int iResult = ReadTFA(tMsg->TFA);
+		if (iResult == TFA_SUCCESS)
+		{
+			resp = Connected;
+			strcpy_s(myCID, tMsg->myCID);
+
+			std::vector<TSocketManager>::iterator iitt;
+			for (iitt = sockmng.begin(); iitt != sockmng.end(); iitt++)
+			{
+				//std::cout << "search "
+				if ((*iitt).ASocket == smgr->ASocket)
+				{
+					std::vector<TRegistration*>::iterator iter;
+					for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
 					{
-						if (user->LoginAttempt < MAX_ALLOW_LOGIN_ATTEMPT)
+						if (!strcmp((*iter)->ContactID, myCID))
 						{
-							printf("login success");
-							rsp.MessageLen1 = (char)strlen("Login Success");
-							memcpy(&rsp.Message1, "Login Success", strlen("Login Success"));
-							rsp.MessageLen2 = (char)strlen(user->email);
-							memcpy(&rsp.Message2, user->email, strlen(user->email));
-							Success = true;
-							user->LoginAttempt = 0;
+							strcpy_s((*iitt).Owner, myCID);
+							strcpy_s((*iter)->LastIPAddress, (*iitt).IPAddr);
+							std::cout << "Login Information : " << (*iter)->email << " / " << myCID << " / " << (*iitt).IPAddr << std::endl;
 							break;
 						}
 					}
+					if (iter == controlDevices.end())
+					{
+						std::cout << "Can't find user" << std::endl;
+					}
+					break;
 				}
 			}
-
-			if (!Success)
+			TStatusInfo* feedback = (TStatusInfo*)std::malloc(sizeof(TStatusInfo));
+			if (feedback != NULL)
 			{
-				for (TRegistration* user : controlDevices) {
-					if (!strncmp(LoginData->email, user->email, EMAIL_BUFSIZE))
+				feedback->MessageType = TwoFactorResponse;
+				feedback->status = Connected;
+				strcpy_s(feedback->myCID, myCID);
+				SSL_write(smgr->ssl, (char*)feedback, sizeof(TStatusInfo));
+				//sendto(__InputSock, (char*)feedback, sizeof(TStatusInfo), 0, (sockaddr*)&sockip, socklen);
+				free(feedback);
+				return true;
+			}
+		}
+		else
+		{
+			std::cout << "Wrong Value" << std::endl;
+			TStatusInfo* feedback = (TStatusInfo*)std::malloc(sizeof(TStatusInfo));
+			if (feedback != NULL)
+			{
+				feedback->MessageType = TwoFactorResponse;
+				feedback->status = Disconnected;
+				strcpy_s(feedback->myCID, myCID);
+				SSL_write(smgr->ssl, (char*)feedback, sizeof(TStatusInfo));
+				//sendto(__InputSock, (char*)feedback, sizeof(TStatusInfo), 0, (sockaddr*)&sockip, socklen);
+				free(feedback);
+				return true;
+			}
+		}
+		break;
+	}
+	case RequestStatus:
+	{
+		break;
+	}
+	case SendStatus:
+	{
+		break;
+	}
+
+	case RequestContactList:
+	{
+		TContactList clist{};
+		clist.MessageType = SendContactList;
+		clist.ListSize = (char)0;
+		strcpy_s(clist.ListBuf, "");
+		// Load stored data
+		std::vector<TRegistration*>::iterator iter;
+		for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
+		{
+			strcat_s(clist.ListBuf, (*iter)->ContactID);
+			strcat_s(clist.ListBuf, "/");
+			clist.ListSize += 1;
+		}
+		std::cout << "merge data : " << clist.ListBuf << std::endl;
+		// send contact list
+		SSL_write(smgr->ssl, (char*)&clist, sizeof(clist));
+		//sendto(__InputSock, (char*)&clist, sizeof(clist), 0, (sockaddr*)&sockip, socklen);
+
+		break;
+	}
+	case RequestCall:
+	{
+		TDeviceID* tmp = (TDeviceID*)data;
+		char* fromDev = tmp->FromDevID;
+		char* dev_id = tmp->ToDevID;
+		std::cout << "Call request to " << dev_id << std::endl;
+		std::vector<TSocketManager>::iterator iit;
+		for (iit = sockmng.begin(); iit != sockmng.end(); iit++)
+		{
+			std::cout << "socket info : " << (*iit).Owner << " -> " << (*iit).IPAddr << std::endl;
+		}
+
+		// Load stored IP_addres of Receiver
+		std::vector<TRegistration*>::iterator iter;
+		for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
+		{
+			if (!strncmp(dev_id, (*iter)->ContactID, NAME_BUFSIZE))
+			{
+				TDeviceID msg{};
+				msg.MessageType = RequestCall;
+
+				strcpy_s(msg.FromDevID, fromDev);
+				strcpy_s(msg.ToDevID, dev_id);
+
+				std::vector<TSocketManager>::iterator iitt;
+				for (iitt = sockmng.begin(); iitt != sockmng.end(); iitt++)
+				{
+					if (!strcmp((*iitt).Owner, (*iter)->ContactID))
 					{
-						user->LoginAttempt++;
-
-						if (user->LoginAttempt == MAX_ALLOW_LOGIN_ATTEMPT)
-						{
-							HANDLE hTimer = NULL;
-							HANDLE hTimerQueue = CreateTimerQueue();
-
-							if (!hTimerQueue) {
-								printf("hTimerQueue is null\n");
-								break;
-							}
-
-							if (!CreateTimerQueueTimer(&hTimer, hTimerQueue, ResetLoginAttempt, user, 3600000, 0, 0)) {
-								printf("hTimerQueue is null\n");
-								break;
-							}
-						}
+						std::cout << "transfer request : " << msg.FromDevID << " -> " << msg.ToDevID << " / " << (*iitt).IPAddr << std::endl;
+						//int ret = send((*iitt).ASocket, (char*)&msg, sizeof(msg), 0);
+						int ret = SSL_write((*iitt).ssl, (char*)&msg, sizeof(msg));
+						std::cout << (*iitt).ASocket << ", " << ret << std::endl;
 						break;
 					}
 				}
 			}
-
-			//int sent = sendto(__InputSock, (char*)&rsp, sizeof(TRspWithMessage2), 0, (sockaddr*)&sockip, socklen);
-			int sent = SSL_write(ssl, (const void *)&rsp, sizeof(TRspWithMessage2));
-
-			// compare stored data
-
-			// compare result
-			// if true : status update
-			// TStatusInfo *sinfo = (TStatusInfo *)std::malloc(sizeof(TStatusInfo));
-			// sinfo->MessageType = SendStatus
-			// sinfo->status = "<< connect status >>"
-			// sendto(Accepter, (char *)sinfo, sizeof(TStatusInfo), 0, 0, <<sockaddr>>, <<sockaddr_len>>);
-
-			// if false :
-
-			//testlogin();
-
-			break;
-		}
-		case RequestStatus:
-		{
-			break;
-		}
-		case SendStatus:
-		{
-			break;
 		}
 
-		case RequestContactList:
+		break;
+	}
+	case AcceptCall:
+	{
+		TDeviceID* tmp = (TDeviceID*)data;
+		char* fromDev = tmp->FromDevID;
+		char* dev_id = tmp->ToDevID;
+		std::cout << "Call Accepted from " << fromDev << " to " << dev_id << std::endl;
+
+		TAcceptCall msg{};
+		msg.MessageType = AcceptCall;
+
+		std::vector<TSocketManager>::iterator iter;
+		for (iter = sockmng.begin(); iter != sockmng.end(); iter++)
 		{
-			// Load stored data
-
-			// send contact list
-			// TContactList *clist = (TContactList *)std::malloc(sizeof(TContactList));
-			// clist->MessageType = SendContactList
-			// for i in range(Sizeof stored clist)
-			//		(clist->DevID).append(stored_clist[i])
-			// sendto(Accepter, (char *)clist, sizeof(TContactList), 0, 0, <<sockaddr>>, <<sockaddr_len>>);
-			TContactList rsp{};
-			rsp.MessageType = SendContactList;
-			rsp.ListSize = MAX_DEVSIZE;
-
-			int i = 0;
-			for (TRegistration* user : controlDevices) {
-				memcpy(rsp.ListBuf[i], user->email, strlen(user->email));
-				i++;
+			if (!strncmp(fromDev, (*iter).Owner, NAME_BUFSIZE))
+			{
+				strcpy_s(msg.IPAddress, (*iter).IPAddr);
+				break;
 			}
-
-			//int sent = sendto(__InputSock, (char*)&rsp, sizeof(TContactList), 0, (sockaddr*)&sockip, socklen);
-			int sent = SSL_write(ssl, (char*)&rsp, sizeof(TContactList));
-
-			break;
 		}
-		case RequestCall:
-		{
-			TDeviceID* tmp = (TDeviceID*)data;
-			// char* dev_id = tmp->DevID;
-			// std::cout << dev_id << std::endl;
-			// Load stored IP_addres of Receiver 
-			// sendto(Accepter, (char*)tmp, sizeof(TDeviceID), 0, 0, << sockaddr_forward >> , << sockaddr_len >> );
-			break;
-		}
-		case AcceptCall:
-		{
-			TDeviceID* tmp = (TDeviceID*)data;
-			// char* dev_id = tmp->DevID;
-			// std::cout << dev_id << std::endl;
-			break;
-		}
-		case RejectCall:
-		{
-			TDeviceID* tmp = (TDeviceID*)data;
-			// char* dev_id = tmp->DevID;
-			// std::cout << dev_id << std::endl;
-			break;
-		}
-		case MissedCall:
-		{
-			TReqwithMessage* req = (TReqwithMessage*)data;
-			TMissedCall rsp{};
 
-			rsp.MessageType = MissedCall;
-			rsp.ListSize = MAX_DEVSIZE;
+		for (iter = sockmng.begin(); iter != sockmng.end(); iter++)
+		{
+			if (!strncmp(dev_id, (*iter).Owner, NAME_BUFSIZE))
+			{
+				strcpy_s(msg.FromDevID, fromDev);
+				strcpy_s(msg.ToDevID, dev_id);
 
-			int i = 0;
-			for (TRegistration* user : controlDevices) {
-				if (!strncmp((const char*)req->Message, user->email, req->MessageLen)) {
-					memcpy(rsp.ListBuf[i], user->MissedCall, strlen((const char *)user->MissedCall));
-					break;
-				}
-				i++;
+				//send((*iter).ASocket, (char*)&msg, sizeof(msg), 0);
+				SSL_write((*iter).ssl, (char*)&msg, sizeof(msg));
+				std::cout << "Accept call : " << msg.FromDevID << " -> " << msg.ToDevID << " / " << msg.IPAddress << std::endl;
+				break;
 			}
-
-			//int sent = sendto(__InputSock, (char*)&rsp, sizeof(TMissedCall), 0, (sockaddr*)&sockip, socklen);
-			int sent = SSL_write(ssl, (char*)&rsp, sizeof(TMissedCall));
-
-			break;
 		}
 
+		break;
+	}
+	case RejectCall:
+	{
+		TDeviceID* tmp = (TDeviceID*)data;
+		char* fromDev = tmp->FromDevID;
+		char* dev_id = tmp->ToDevID;
+		std::cout << "Call rejected from " << fromDev << " to " << dev_id << std::endl;
+		sockaddr_in sockto;
+		int iResult = findReceiverIP(fromDev, &sockto);
+		if (iResult != 0)
+		{
+			TDeviceID msg{};
+			msg.MessageType = RejectCall;
 
-		default:
-			break;
+			strcpy_s(msg.FromDevID, fromDev);
+			strcpy_s(msg.ToDevID, dev_id);
+			//sendto(__InputSock, (char*)&msg, sizeof(msg), 0, (sockaddr*)&sockto, iResult);
+			SSL_write(smgr->ssl, (char*)&msg, sizeof(msg));
+		}
+		break;
+	}
+	case MissedCall:
+	{
+		TReqwithMessage* req = (TReqwithMessage*)data;
+		TMissedCall rsp{};
+
+		rsp.MessageType = MissedCall;
+		rsp.ListSize = MAX_DEVSIZE;
+
+		int i = 0;
+		for (TRegistration* user : controlDevices) {
+			if (!strncmp((const char*)req->Message, user->email, req->MessageLen)) {
+				memcpy(rsp.ListBuf[i], user->MissedCall, strlen((const char*)user->MissedCall));
+				break;
+			}
+			i++;
+		}
+
+		//int sent = sendto(__InputSock, (char*)&rsp, sizeof(TMissedCall), 0, (sockaddr*)&sockip, socklen);
+		SSL_write(smgr->ssl, (char*)&rsp, sizeof(TMissedCall));
+		break;
+	}
+
+	default:
+		break;
 	}
 	return 0;
 }
@@ -702,13 +855,14 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 
 bool RegistrationToMem(TRegistration* data)
 {
-	int len = controlDevices.size();
+	size_t len = controlDevices.size();
 	if (len < MAX_DEVSIZE )
 	{
 		TRegistration* input = (TRegistration*)std::malloc(sizeof(TRegistration));
-		std::memset(input, 0, sizeof(TRegistration));
+
 		if (input != NULL)
 		{
+			std::memset(input, 0, sizeof(TRegistration));
 			memcpy(input, data, sizeof(TRegistration));
 			controlDevices.push_back(input);
 			return true;
@@ -728,9 +882,10 @@ bool RegistrationToMem(TRegistration* data)
 
 bool RegistrationToFile(void)
 {
-	int len = controlDevices.size();
+	size_t len = controlDevices.size();
 	if (len < (MAX_DEVSIZE+1) )
 	{
+		std::cout << "Store File - size :" << len << std::endl;
 		StoreData(controlDevices);
 		return true;
 	}
@@ -748,12 +903,94 @@ bool RegistrationUserData(TRegistration* data)
 	return true;
 }
 
-#define MAX_PATH 1024
+bool sendCommandOnlyMsg(TSocketManager *smgr, sockaddr_in sockip, int socklen, bool answer)
+{
+	TCommandOnly* feedback = (TCommandOnly*)std::malloc(sizeof(TCommandOnly));
+	if (feedback != NULL)
+	{
+		feedback->MessageType = RegistrationResponse;
+		feedback->answer = answer;
+		//sendto(__InputSock, (char*)feedback, sizeof(TCommandOnly), 0, (sockaddr*)&sockip, socklen);
+		SSL_write(smgr->ssl, (char*)feedback, sizeof(TCommandOnly));
+		free(feedback);
+		return true;
+	}
+	return false;
+}
+
+bool sendStatusMsg(TSocketManager *smgr, sockaddr_in sockip, int socklen, char* cid, TStatus status)
+{
+	TStatusInfo* feedback = (TStatusInfo*)std::malloc(sizeof(TStatusInfo));
+	if (feedback != NULL)
+	{
+		feedback->MessageType =LoginResponse;
+		feedback->status = status;
+		strcpy_s(feedback->myCID, cid);
+		//sendto(__InputSock, (char*)feedback, sizeof(TStatusInfo), 0, (sockaddr*)&sockip, socklen);
+		SSL_write(smgr->ssl, (char*)feedback, sizeof(TStatusInfo));
+		free(feedback);
+		return true;
+	}
+	return false;
+}
+
+void setMacro(SOCKET __InputSock,TRegistration* regData)
+{
+	auto now = std::chrono::system_clock::now();
+	std::time_t end_time = std::chrono::system_clock::to_time_t(now);
+	char* buf = (char*)std::malloc(sizeof(char) * 128);
+	if (buf)
+	{
+		ctime_s(buf,128, &end_time);
+		strcpy_s(regData->LastRegistTime, buf);
+	}
+
+	char ipbuf[32];
+	sockaddr_in sock_a;
+	int size = sizeof(sockaddr_in);
+	memset(&sock_a, 0x00, sizeof(sock_a));
+	getpeername(__InputSock, (sockaddr*)&sock_a, &size);
+	inet_ntop(AF_INET, &sock_a.sin_addr, ipbuf, sizeof(ipbuf));
+
+	std::cout << "IP address - " << ipbuf << std::endl;
+	strcpy_s(regData->LastIPAddress, 32, ipbuf);
+}
+
+char* getFromAddr(SOCKET __InputSock)
+{
+	char* ipbuf = (char *)std::malloc(sizeof(char)*32);
+	sockaddr_in sock_a;
+	int size = sizeof(sockaddr_in);
+	memset(&sock_a, 0x00, sizeof(sock_a));
+	getpeername(__InputSock, (sockaddr*)&sock_a, &size);
+	inet_ntop(AF_INET, &sock_a.sin_addr, ipbuf, sizeof(ipbuf));
+
+	return ipbuf;
+}
+
+int findReceiverIP(char* recID, sockaddr_in *out)
+{
+	std::vector<TRegistration*>::iterator iter;
+	for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
+	{
+		if (!strncmp(recID, (*iter)->ContactID, NAME_BUFSIZE))
+		{
+			int ss = sizeof(sockaddr_in);
+			(*out).sin_family = AF_INET;
+			inet_pton(AF_INET, (*iter)->LastIPAddress, &((*out).sin_addr.s_addr));
+			(*out).sin_port = htons(ACS_PORT);
+			return ss;
+		}
+	}
+	return 0;
+}
+
+
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	char currentDir[MAX_PATH];
-	GetCurrentDirectoryA(MAX_PATH, currentDir);
+	char currentDir[1024];
+	GetCurrentDirectoryA(1024, currentDir);
 	std::cout << "Current Directory: " << currentDir << std::endl;
 
 	SetPriorityClass(GetCurrentProcess(), REALTIME_PRIORITY_CLASS);

@@ -1,86 +1,26 @@
 #include <windows.h>
 #include <stdio.h>
-#include "definition.h"
+#include <vector>
+#include <iostream>
+#include <Commctrl.h>
+#include "LgVideoChatDemo.h"
+#include "AccessControlClient.h"
 
 #define BUTTON_CALL 400
 
 HWND hwnd, hComboBox, hCallButton;
 
 extern bool IsLogin;
-extern char MyEmail[GENERAL_BUFSIZE];
-char ContactList[5][GENERAL_BUFSIZE]{};
 
-LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-    switch (uMsg)
-    {
-    case WM_COMMAND:
-    {
-        int wmId = LOWORD(wParam);
-        switch (wmId)
-        {
-        case BUTTON_CALL:
-   	    {
-            int selectedIndex = SendMessage(hComboBox, CB_GETCURSEL, 0, 0);
-            if (selectedIndex != CB_ERR)
-            {
-                // 선택된 항목의 길이 가져오기
-                int textLength = SendMessage(hComboBox, CB_GETLBTEXTLEN, selectedIndex, 0);
-                if (textLength != CB_ERR)
-                {
-                    // 선택된 항목의 텍스트 가져오기
-                    wchar_t* selectedText = new wchar_t[textLength + 1];
-                    SendMessage(hComboBox, CB_GETLBTEXT, selectedIndex, (LPARAM)selectedText);
+std::vector<char*> ContactList;
+//char ContactList[5][128];
+//int contactListSize = 0;
 
-                    // 선택된 항목 출력
-                    MessageBox(hwnd, selectedText, L"Selected Item", MB_OK);
-                }
-            }
-        }
-        }
-    }
-    break;
-    case WM_CREATE:
-    {
-        // ComboBox 생성
-        hComboBox = CreateWindowEx(0, L"ComboBox", NULL, WS_CHILD | WS_VISIBLE | CBS_SIMPLE,
-            10, 10, 200, 200, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
-
-
-        TCHAR Contact[5][GENERAL_BUFSIZE]{};
-
-        for (int i = 0; i < 5; i++)
-        {
-            if (strlen((const char*)ContactList[i]) > 0) { // need to exclue myself?
-                MultiByteToWideChar(CP_ACP, 0, ContactList[i], -1, Contact[i], GENERAL_BUFSIZE);
-                SendMessage(hComboBox, CB_ADDSTRING, 0, (LPARAM)Contact[i]);
-            }
-        }
-    }
-    break;
-
-    case WM_DESTROY:
-    {
-        DestroyWindow(hCallButton);
-        DestroyWindow(hComboBox);
-        DestroyWindow(hwnd);
-        return 0;
-    }
-    case WM_CLOSE:
-    {
-        DestroyWindow(hCallButton);
-        DestroyWindow(hComboBox);
-        DestroyWindow(hwnd);
-        return 0;
-    }
-    }
-
-    return DefWindowProc(hwnd, uMsg, wParam, lParam);
-}
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 int WINAPI CreateContactList(HWND Phwnd)
 {
-    if (!IsLogin)
+    if (devStatus == Disconnected)
     {
         MessageBox(NULL, L"Please Login First", L"Error", MB_OK | MB_ICONERROR);
         return 1;
@@ -96,7 +36,7 @@ int WINAPI CreateContactList(HWND Phwnd)
 
     // 윈도우 생성
     hwnd = CreateWindowEx(0, L"MainWindowClass", L"Contact List", WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT, 400, 300, NULL, NULL, wc.hInstance, NULL);
+        CW_USEDEFAULT, CW_USEDEFAULT, 400, 300, Phwnd, NULL, wc.hInstance, NULL);
 
     if (hwnd == NULL)
     {
@@ -126,4 +66,108 @@ int WINAPI CreateContactList(HWND Phwnd)
     }
 
     return (int)msg.wParam;
+}
+
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    switch (uMsg)
+    {
+        case WM_COMMAND:
+        {
+            int wmId = LOWORD(wParam);
+            switch (wmId)
+            {
+                case BUTTON_CALL:
+                {
+                    int selectedIndex = SendMessage(hComboBox, CB_GETCURSEL, 0, 0);
+                    if (selectedIndex != CB_ERR)
+                    {
+                        // 선택된 항목의 길이 가져오기
+                        int textLength = SendMessage(hComboBox, CB_GETLBTEXTLEN, selectedIndex, 0);
+                        if (textLength != CB_ERR)
+                        {
+                            // 선택된 항목의 텍스트 가져오기
+                            wchar_t* selectedText = new wchar_t[textLength + 1];
+                            SendMessage(hComboBox, CB_GETLBTEXT, selectedIndex, (LPARAM)selectedText);
+
+                            // 선택된 항목 출력
+                            //MessageBox(hwnd, selectedText, L"Selected Item", MB_OK);
+
+                            // call request
+                            char* outbuf = (char*)std::malloc(sizeof(char) * NAME_BUFSIZE);
+                            WideCharToMultiByte(CP_ACP, 0, selectedText, -1, outbuf, NAME_BUFSIZE, NULL, NULL);
+                            std::cout << "make a call to " << outbuf << std::endl;
+                            devStatus = Caller;
+                            TDeviceID msg{};
+                            msg.MessageType = RequestCall;
+                            //int nLength = WideCharToMultiByte(CP_ACP, 0, target, -1, NULL, 0, NULL, NULL);
+                            //char* outbuf = (char*)std::malloc(sizeof(char) * NAME_BUFSIZE);
+                            //WideCharToMultiByte(CP_ACP, 0, selectedText, -1, outbuf, NAME_BUFSIZE, NULL, NULL);
+                            strcpy_s(msg.ToDevID, outbuf);
+                            strcpy_s(msg.FromDevID, MyID);
+                            sendMsgtoACS((char*)&msg, sizeof(msg));
+
+                            SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUEST,
+                                (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
+                            SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_DENY,
+                                (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
+
+                            DestroyWindow(hwnd);
+                        }
+                    }
+                }
+            }
+        }
+        break;
+        case WM_CREATE:
+        {
+            // ComboBox 생성
+            hComboBox = CreateWindowEx(0, L"ComboBox", NULL, WS_CHILD | WS_VISIBLE | CBS_SIMPLE,
+                10, 10, 200, 200, hwnd, NULL, (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
+        
+            // ComboBox에 항목 추가
+            TCHAR Contact[128];
+
+            std::vector<char*>::iterator iter;
+
+            for (iter = ContactList.begin(); iter != ContactList.end(); iter++)
+            {
+                if (!strcmp(MyID, (*iter))) continue;
+                MultiByteToWideChar(CP_ACP, 0, *iter, -1, Contact, 128);
+                SendMessage(hComboBox, CB_ADDSTRING, 0, (LPARAM)Contact);
+            }
+        }
+        break;
+        
+        case WM_DESTROY:
+        {
+            DestroyWindow(hCallButton);
+            DestroyWindow(hComboBox);
+            DestroyWindow(hwnd);
+            return 0;
+        }
+        case WM_CLOSE:
+        {
+            DestroyWindow(hCallButton);
+            DestroyWindow(hComboBox);
+            DestroyWindow(hwnd);
+            return 0;
+        }
+    }
+
+    return DefWindowProc(hwnd, uMsg, wParam, lParam);
+}
+
+void makeContactList(char* contactID, bool first = false)
+{
+    if (first)
+        ContactList.clear();
+    ContactList.push_back(contactID);
+    //char* cid = (char*)std::malloc(sizeof(char)*128);
+    //if (cid != NULL)
+    //{
+    //    //strncpy_s(cid, contactID, 128);
+    //    strncpy_s(cid, 128, contactID, 128);
+    //    ContactList.push_back(cid);
+    //}
 }

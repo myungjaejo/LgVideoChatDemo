@@ -1,26 +1,32 @@
 [
 	{
+		"IP" : "192.168.68.106",
 		"address" : "",
-		"contactID" : "aaa@aaa.com",
-		"email" : "aaa@aaa.com",
-		"firstName" : "",
+		"contactID" : "cat",
+		"email" : "cat@cmu.edu",
+		"firstName" : "cat",
+		"lastAccess" : "Tue Jun 20 16:03:43 2023\n",
 		"lastName" : "",
-		"password" : "A59CE44D5341ED619ABD5C67723BFBE1CB9F6ED7FFB0245D55D0FA3B04094712"
+		"password" : "B61EBFFD47B67A399358AB803D3411BF353A53C9EEA8AF0BFA08732EC39EECB9"
 	},
 	{
+		"IP" : "192.168.68.105",
 		"address" : "",
-		"contactID" : "bbb@bbb.com",
-		"email" : "bbb@bbb.com",
+		"contactID" : "alice",
+		"email" : "alice@cmu.edu",
 		"firstName" : "",
+		"lastAccess" : "Tue Jun 20 16:04:34 2023\n",
 		"lastName" : "",
-		"password" : "A317BC8A772A946B006C6964357277852B22659AC9DD40DC026852F609FE6191"
+		"password" : "032FF7A0CCDD957511F6500D16AAD29FABB8EEF396955B369E56DCEE8F7D585A"
 	},
 	{
+		"IP" : "192.168.68.106",
 		"address" : "",
-		"contactID" : "ccc@ccc.com",
-		"email" : "ccc@ccc.com",
+		"contactID" : "moonsik",
+		"email" : "moonsikn@andrew.cmu.edu",
 		"firstName" : "",
+		"lastAccess" : "Wed Jun 21 20:13:44 2023\n",
 		"lastName" : "",
-		"password" : "61308CF0BF7FFB29299CD45EBF88E00A3439C5611D1826AC20888C49F635E496"
+		"password" : "73F7E91CB6459593762097A71C9AD480153F2E8DA4CC77D29F1C46EC66DE76F5"
 	}
 ]

@@ -6,10 +6,20 @@
 #include <ws2tcpip.h>
 #include < cstdlib >
 #include <iostream>
+#include <Commctrl.h>
+
 #include "AccessControlClient.h"
 #include "LgVideoChatDemo.h"
 #include "TcpSendRecv.h"
 #include "definition.h"
+#include "ContactList.h"
+#include "NotifyCall.h"
+#include "VideoClient.h"
+#include <opencv2\highgui\highgui.hpp>
+#include <opencv2\opencv.hpp>
+#include "Camera.h"
+#include "DisplayImage.h"
+#include "TwoFactorAuth.h"
 #include <openssl/ssl.h>
 
 #pragma comment(lib, "libssl.lib")
@@ -25,7 +35,7 @@ static DWORD ThreadACClientID;
 
 static DWORD WINAPI ThreadACClient(LPVOID ivalue);
 static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in sockip, int socklen);
-
+static int OnConnect(char* IPAddr);
 char MyEmail[GENERAL_BUFSIZE]{};
 
 extern bool IsLogin;
@@ -250,6 +260,7 @@ static DWORD WINAPI ThreadACClient(LPVOID ivalue)
             break;
         else if (dwEvent == WAIT_OBJECT_0 + 1)
         {
+            WSAResetEvent(hClientEvent);
             WSANETWORKEVENTS NetworkEvents;
             if (SOCKET_ERROR == WSAEnumNetworkEvents(Client, hClientEvent, &NetworkEvents))
             {
@@ -273,14 +284,10 @@ static DWORD WINAPI ThreadACClient(LPVOID ivalue)
 
                         iResult = SSL_read_ex(Clientssl, InputBufferWithOffset, InputBytesNeeded, &len);
 
-                        //iResult = SSL_read(Clientssl, InputBufferWithOffset, InputBytesNeeded);
-                        //iResult = recvfrom(Client, (char*)InputBufferWithOffset, InputBytesNeeded, 0, (sockaddr*)&safrom, &socklen);
-
-
                         if (iResult != SOCKET_ERROR)
                         {
                             //std::cout << "AC client recevied : " << InputBufferWithOffset << std::endl;
-                            RecvHandler(Client, InputBufferWithOffset, iResult, safrom, socklen);
+                            RecvHandler(Client, InputBufferWithOffset, len, safrom, socklen);
                         }
                         else 
                             std::cout << "ReadDataTcpNoBlock buff failed " << WSAGetLastError() << std::endl;
@@ -344,11 +351,8 @@ static DWORD WINAPI ThreadACClient(LPVOID ivalue)
 
 int sendMsgtoACS(char* data, int len)
 {
-
     size_t sent;
 
-    //return send(Client, data, len, 0);
-    //return SSL_write(Clientssl, data, len);
     return SSL_write_ex(Clientssl, data, len, &sent);
 }
 
@@ -419,36 +423,72 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
     }
     case LoginResponse:
     {
-        std::cout << "login rsp " << std::endl;
-        TRspWithMessage2 *rsp = (TRspWithMessage2*)data;
-        printf("%s", rsp->Message1);
-        if (!strncmp((const char*)rsp->Message1, "Login Success", strlen("Login Success")))
+        TStatusInfo* sMsg = (TStatusInfo*)data;
+        if (sMsg->status == VaildTwoFactor)
         {
-            IsLogin = true;
-            //get contact list
-            TReqwithMessage req{};
-            req.MessageType = RequestContactList;
-            sendMsgtoACS((char*)&req, sizeof(req));
+            //devStatus = Connected;
+            //PostMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUEST,
+            //    (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
+            //PostMessage(hWndMainToolbar, TB_SETSTATE, IDM_LOGIN,
+            //    (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
+            //PostMessage(hWndMainToolbar, TB_SETSTATE, IDM_LOGOUT,
+            //    (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
 
-            memcpy(MyEmail, rsp->Message2, rsp->MessageLen2);
+            //strcpy_s(MyID, sMsg->myCID);
+            //std::cout << "Lonin Success - ID : "<< MyID << std::endl;
 
-/*
-            //get missd call
-            req.MessageType = MissedCall;
+            //TCommandOnly* msg = (TCommandOnly*)std::malloc(sizeof(TCommandOnly));
+            //if (msg != NULL)
+            //{
+            //    msg->MessageType = RequestContactList;
+            //    msg->answer = true;
+            //    sendMsgtoACS((char*)msg, sizeof(TCommandOnly));
+            //}
 
-            req.MessageLen = strlen((const char*)rsp->Message2);
-            memcpy(req.Message, rsp->Message2, req.MessageLen);
-
-            sendMsgtoACS((char*)&req, sizeof(req));
-            */
-
-            SendMessage(hwndLogin, WM_DESTROY, 0, 0);
-            MessageBox(NULL, L"Login Success", L"", MB_OK);
-
-            break;
+            //open Two factor popup
+            //SendTFA(sMsg->myCID);
+            strcpy_s(MyID, sMsg->myCID);
+            PostMessage(hWndMain, WM_OPEN_TWOFACTORAUTH, 0, 0);
         }
-        MessageBox(NULL, L"Login Failed", L"", MB_OK | MB_ICONERROR);
+        else
+        {
+            devStatus = Disconnected;
+            PostMessage(hWndMain, WM_COMMAND, (WPARAM)IDM_LOGOUT, 0);
+            std::cout << "Lonin Failed " << std::endl;
+        }
 
+        break;
+    }
+	case TwoFactorResponse:
+    {
+        TStatusInfo* sMsg = (TStatusInfo*)data;
+        if (sMsg->status == Connected)
+        {
+            devStatus = Connected;
+            PostMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUEST,
+                (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
+            PostMessage(hWndMainToolbar, TB_SETSTATE, IDM_LOGIN,
+                (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
+            PostMessage(hWndMainToolbar, TB_SETSTATE, IDM_LOGOUT,
+                (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
+
+            strcpy_s(MyID, sMsg->myCID);
+            std::cout << "Lonin Success - ID : " << MyID << std::endl;
+
+            TCommandOnly* msg = (TCommandOnly*)std::malloc(sizeof(TCommandOnly));
+            if (msg != NULL)
+            {
+                msg->MessageType = RequestContactList;
+                msg->answer = true;
+                sendMsgtoACS((char*)msg, sizeof(TCommandOnly));
+            }
+        }
+        else
+        {
+            devStatus = Disconnected;
+            PostMessage(hWndMain, WM_COMMAND, (WPARAM)IDM_LOGOUT, 0);
+            std::cout << "Lonin Failed " << std::endl;
+        }
         break;
     }
     case LogoutResponse:
@@ -464,27 +504,29 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
         break;
     }
 
-    case RequestContactList:
-    {
-        // Load stored data
-
-        // send contact list
-        // TContactList *clist = (TContactList *)std::malloc(sizeof(TContactList));
-        // clist->MessageType = SendContactList
-        // for i in range(Sizeof stored clist)
-        //		(clist->DevID).append(stored_clist[i])
-        // sendto(Accepter, (char *)clist, sizeof(TContactList), 0, 0, <<sockaddr>>, <<sockaddr_len>>);
-
-        break;
-    }
     case SendContactList:
     {
-        TContactList* req = (TContactList*)data;
-
-        for (int i = 0; i < MAX_DEVSIZE; i++) {
-            printf("%s\n", req->ListBuf[i]);
-            if (strlen((const char*)req->ListBuf[i]) > 0)
-                memcpy(ContactList[i], req->ListBuf[i], strlen((const char*)req->ListBuf[i]));
+        // Load stored data
+        TContactList* clist = (TContactList*)data;
+        int size = int(clist->ListSize);
+        if (size == 0)
+        {
+            std::cout << "You're Only User in this System" << std::endl;
+        }
+        else
+        {   
+            char* buf;
+            char* parse = strtok_s(clist->ListBuf, "/", &buf);
+            makeContactList(parse, true);
+            for (int i = 1; i < size; i++)
+            {
+                parse = strtok_s(NULL, "/", &buf);
+                makeContactList(parse, false);
+            }
+           
+            //CreateContactList(NULL);
+            PostMessage(hWndMain, WM_OPEN_CONTACTLIST, 0, 0);
+            std::cout << "make contact list" << std::endl;
         }
 
         break;
@@ -492,24 +534,28 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
     case RequestCall:
     {
         TDeviceID* tmp = (TDeviceID*)data;
-        // char* dev_id = tmp->DevID;
-        // std::cout << dev_id << std::endl;
-        // Load stored IP_addres of Receiver 
-        // sendto(Accepter, (char*)tmp, sizeof(TDeviceID), 0, 0, << sockaddr_forward >> , << sockaddr_len >> );
+        PostMessage(hWndMain, WM_OPEN_CALLREQUEST, 0, (LPARAM)tmp->FromDevID);
+
         break;
     }
     case AcceptCall:
     {
-        TDeviceID* tmp = (TDeviceID*)data;
-        // char* dev_id = tmp->DevID;
-        // std::cout << dev_id << std::endl;
+        TAcceptCall* tmp = (TAcceptCall*)data;
+
+        std::cout << "make a call - status(" << int(devStatus) << ")" << std::endl;
+        if (devStatus == Caller)
+        {
+            // OnConnect(tmp->IPAddress);
+            PostMessage(hWndMain, WM_OPEN_VIDEOCLIENT, 0, (LPARAM)tmp->IPAddress);
+            devStatus = Calling;
+        }
+
         break;
     }
     case RejectCall:
     {
-        TDeviceID* tmp = (TDeviceID*)data;
-        // char* dev_id = tmp->DevID;
-        // std::cout << dev_id << std::endl;
+        //TDeviceID* tmp = (TDeviceID*)data;
+        devStatus = Connected;
         break;
     }
     case MissedCall:
@@ -530,3 +576,33 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
     return 0;
 }
 
+static int OnConnect(char* IPAddr)
+{
+    if (!IsVideoClientRunning())
+    {
+        if (OpenCamera())
+        {
+            if (ConnectToSever(IPAddr, VIDEO_PORT))
+            {
+                std::cout << "Connected to Server" << std::endl;
+                StartVideoClient();
+                std::cout << "Video Client Started.." << std::endl;
+                VoipVoiceStart(IPAddr, VOIP_LOCAL_PORT, VOIP_REMOTE_PORT, VoipAttr);
+                std::cout << "Voip Voice Started.." << std::endl;
+                return 1;
+            }
+            else
+            {
+                std::cout << "Connection Failed!" << std::endl;
+                return 0;
+            }
+
+        }
+        else
+        {
+            std::cout << "Open Camera Failed" << std::endl;
+            return 0;
+        }
+    }
+    return 0;
+}
