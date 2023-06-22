@@ -314,6 +314,7 @@ int OnConnectACS(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         else
         {
             std::cout << "Connection AC server Failed!" << std::endl;
+            MessageBox(hWnd, TEXT("Connection AC server Failed!"), TEXT("ERROR"), MB_OK | MB_ICONEXCLAMATION);
             return 0;
         }
 

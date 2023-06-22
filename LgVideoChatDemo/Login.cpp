@@ -5,15 +5,22 @@
 #include <tchar.h>
 #include <regex>
 #include <Commctrl.h>
+#include "include/openssl/sha.h"
+#include "include/openssl/bio.h"
+#include "include/openssl/evp.h"
 //#include "definition.h"
 #include "LgVideoChatDemo.h"
 #include "AccessControlClient.h"
 #include "AccessControlServer.h"
 #include "ContactList.h"
 
+#pragma comment(lib, "..\\built-libs\\libcrypto.lib")
+
 #define BUTTON_LOGIN 300
 #define BUTTON_REGISTER 301
 #define BUTTON_FORGETPASSWD 302
+
+extern void CreateForgetPasswd(HWND phwnd);
 
 const int maxEmailLength = 30;
 const int maxPasswdLength = 30;
@@ -67,42 +74,27 @@ bool ValidateEmailAddress(const TCHAR* email) {
 }
 
 void SHA256Hash(const TCHAR* input, size_t inputLength, char* output) {
-    HCRYPTPROV hProv = 0;
-    HCRYPTHASH hHash = 0;
-    BYTE hash[32];
-    DWORD hashLen = sizeof(hash);
+    const unsigned char* inputData = reinterpret_cast<const unsigned char*>(input);
 
-    if (!CryptAcquireContext(&hProv, nullptr, nullptr, PROV_RSA_AES, CRYPT_VERIFYCONTEXT)) {
-        std::cerr << "CryptAcquireContext Failed: " << GetLastError() << std::endl;
-        return;
-    }
+    SHA256_CTX sha256;
+    SHA256_Init(&sha256);
+    SHA256_Update(&sha256, inputData, inputLength);
+    SHA256_Final(reinterpret_cast<unsigned char*>(output), &sha256);
 
-    if (!CryptCreateHash(hProv, CALG_SHA_256, 0, 0, &hHash)) {
-        std::cerr << "CryptCreateHash Failed: " << GetLastError() << std::endl;
-        CryptReleaseContext(hProv, 0);
-        return;
-    }
+    BIO* mem = BIO_new(BIO_s_mem());
+    BIO* base64 = BIO_new(BIO_f_base64());
+    BIO_push(base64, mem);
 
-    if (!CryptHashData(hHash, reinterpret_cast<const BYTE*>(input), static_cast<DWORD>(inputLength), 0)) {
-        std::cerr << "CryptHashData Failed: " << GetLastError() << std::endl;
-        CryptDestroyHash(hHash);
-        CryptReleaseContext(hProv, 0);
-        return;
-    }
+    BIO_write(base64, output, SHA256_DIGEST_LENGTH);
+    BIO_flush(base64);
 
-    if (!CryptGetHashParam(hHash, HP_HASHVAL, hash, &hashLen, 0)) {
-        std::cerr << "CryptGetHashParam Failed: " << GetLastError() << std::endl;
-        CryptDestroyHash(hHash);
-        CryptReleaseContext(hProv, 0);
-        return;
-    }
+    char* encodedOutput;
+    long encodedLength = BIO_get_mem_data(mem, &encodedOutput);
 
-    for (DWORD i = 0; i < hashLen; i++) {
-        sprintf_s(output + i * 2, 3, "%02X", hash[i]);
-    }
+    std::memcpy(output, encodedOutput, encodedLength - 1);
+    output[encodedLength - 1] = '\0';
 
-    CryptDestroyHash(hHash);
-    CryptReleaseContext(hProv, 0);
+    BIO_free_all(base64);
 }
 
 void CopyTCharToChar(TCHAR* tcharString, char* CharString, int length)
@@ -157,10 +149,15 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                         return 1;
                     }
 
-                    char PasswdHash[65];
+                    char PasswdChar[GENERAL_BUFSIZE] = { 0, };
+                    char PasswdHash[65] = { 0, };
                     size_t len = _tcslen(Passwd);
-                    SHA256Hash(Passwd, len, PasswdHash);
-                    std::cout << "SHA-256 : " << PasswdHash << std::endl;
+
+                    CopyTCharToChar(Passwd, PasswdChar, len);
+
+                    //SHA256Hash(Passwd, len, PasswdHash);
+                    SHA256Hash((const char*)PasswdChar, len, PasswdHash);
+                    std::cout << "SHA-256 : " << PasswdChar << std::endl;
 
                     TLogin login{};
                     login.MessageType = (char)Login;
@@ -180,7 +177,8 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 }
                 case BUTTON_FORGETPASSWD:
                 {
-                    MessageBox(hwnd, TEXT("BUTTON_FORGETPASSWD"), TEXT("TEST"), MB_OK | MB_ICONEXCLAMATION);
+                    //MessageBox(hwnd, TEXT("BUTTON_FORGETPASSWD"), TEXT("TEST"), MB_OK | MB_ICONEXCLAMATION);
+                    CreateForgetPasswd(hwnd);
                     break;
                 }
 

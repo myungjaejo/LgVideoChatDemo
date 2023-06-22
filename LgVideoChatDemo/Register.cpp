@@ -5,7 +5,8 @@
 #include <cstring>
 #include "AccessControlClient.h"
 #include "Login.h"
-extern void SHA256Hash(const TCHAR* input, size_t inputLength, char* output);
+extern void SHA256Hash(const char* input, size_t inputLength, char* output);
+extern void CopyTCharToChar(TCHAR* tcharString, char* CharString, int length);
 
 #define BUTTON_JOINUS 400
 const int maxLength = 255;
@@ -84,10 +85,14 @@ LRESULT CALLBACK RegisterProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     msg->EmailSize = exchangeTCHARToChar(Email, msg->email);
 
                     memset(msg->password, 0, 256);
+                    char PasswdChar[GENERAL_BUFSIZE] = { 0, };
+                    char PasswdHash[65] = { 0, };
 
-                    char PasswdHash[65];
+                    int len = _tcslen(Passwd);
+                    CopyTCharToChar(Passwd, PasswdChar, len);
 
-                    SHA256Hash(Passwd, _tcslen(Passwd), PasswdHash);
+                    SHA256Hash(PasswdChar, _tcslen(Passwd), PasswdHash);
+
                     std::cout << "SHA-256 : " << PasswdHash << std::endl;
 
                     msg->PasswordSize = 64;
