@@ -22,16 +22,16 @@
 #include "Login.h"
 #include "AccessControlClient.h"
 #include "AccessControlServer.h"
-#include "definition.h"
+//#include "definition.h"
 #include "ContactList.h"
-#include "TimeUtil.h"
-
+#include "NotifyCall.h"
+#include "TwoFactorAuthModule.h"
 
 #pragma comment(lib,"comctl32.lib")
 #ifdef _DEBUG
-#pragma comment(lib,"..\\..\\opencv\\build\\x64\\vc16\\lib\\opencv_world470d.lib")
+#pragma comment(lib,"opencv_world470d.lib")
 #else
-#pragma comment(lib,"..\\..\\opencv\\build\\x64\\vc16\\lib\\opencv_world470.lib")
+#pragma comment(lib,"opencv_world470.lib")
 #endif
 #pragma comment(lib, "IPHLPAPI.lib")
 #pragma comment(lib, "ws2_32.lib")
@@ -42,18 +42,19 @@
 #define IDC_EDIT_REMOTE        1011
 #define IDC_CHECKBOX_LOOPBACK  1012 
 #define IDC_EDIT               1013 
-#define IDM_CONNECT            1014
-#define IDM_DISCONNECT         1015
-#define IDM_START_SERVER       1016
-#define IDM_STOP_SERVER        1017
+//#define IDM_CALL_REQUEST       1014
+//#define IDM_CALL_DENY          1015
+//#define IDM_START_SERVER       1016
+//#define IDM_STOP_SERVER        1017
 #define IDC_LABEL_VAD_STATE    1018
 #define IDC_VAD_STATE_STATUS   1019
 #define IDC_CHECKBOX_AEC       1020 
 #define IDC_CHECKBOX_NS        1021
-#define IDM_LOGIN              1022
-#define IDM_CONTACTLIST        1023
-// Global Variables:
+//#define IDM_LOGIN              1022
+//#define IDM_LOGOUT             1023
 
+
+// Global Variables:
 HWND hWndMain;
 GUID InstanceGuid;
 char LocalIpAddress[512] = "127.0.0.1";
@@ -67,8 +68,11 @@ static char RemoteAddress[512]="127.0.0.1";
 static bool Loopback=false;
 
 static FILE* pCout = NULL;
-static HWND hWndMainToolbar;
+HWND hWndMainToolbar;
 static HWND hWndEdit;
+
+TStatus devStatus = Disconnected;
+char MyID[NAME_BUFSIZE];
 
 // Forward declarations of functions included in this code module:
 static ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -327,21 +331,25 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             case IDM_EXIT:
                 DestroyWindow(hWnd);
                 break;
-            case IDM_CONNECT:
-                if (OnConnect(hWnd, message, wParam, lParam))
-                {
-                    SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CONNECT,
-                        (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
-                    SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_DISCONNECT,
-                        (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
-                }
-                break;
-            case IDM_DISCONNECT:
-                SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CONNECT,
-                    (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
-                SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_DISCONNECT,
+            case IDM_CALL_REQUEST:
+                SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUEST,
                     (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
-                OnDisconnect(hWnd, message, wParam, lParam);
+                SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_DENY,
+                    (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
+                CreateContactList(hWnd);
+                break;
+            case IDM_CALL_DENY:
+                SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUEST,
+                    (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
+                SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_DENY,
+                    (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
+                if (devStatus == Caller)
+                    OnDisconnect(hWnd, message, wParam, lParam);
+                else if (devStatus == Callee)
+                    StopVideoServer();
+                else
+                    std::cout << "ERROR DISConnect " << std::endl;
+                   
                 break;
             case IDM_START_SERVER:
                 SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_START_SERVER,
@@ -349,10 +357,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_STOP_SERVER,
                     (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
                 EnableWindow(GetDlgItem(hWnd, IDC_CHECKBOX_LOOPBACK), false);
-                //EnableWindow(GetDlgItem(hWnd, IDC_CHECKBOX_AEC), false);
-                //EnableWindow(GetDlgItem(hWnd, IDC_CHECKBOX_NS), false);
-                //OnStartServer(hWnd, message, wParam, lParam);
-                //StartACServer(Loopback);
+                StartACServer(Loopback);
                 break;
             case IDM_STOP_SERVER:
                 SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_START_SERVER,
@@ -360,18 +365,31 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_STOP_SERVER,
                     (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
                 EnableWindow(GetDlgItem(hWnd, IDC_CHECKBOX_LOOPBACK), true);
-                //EnableWindow(GetDlgItem(hWnd, IDC_CHECKBOX_AEC), true);
-                //EnableWindow(GetDlgItem(hWnd, IDC_CHECKBOX_NS), true);
-                //OnStopServer(hWnd, message, wParam, lParam);
-                //StopACServer();
+                StopACServer();
                 break;
             case IDM_LOGIN:
-                //StartACServer(Loopback);
+                //SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_LOGIN,
+                //    (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
+                //SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_LOGOUT,
+                //    (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
                 OnConnectACS(hWnd, message, wParam, lParam);
                 LoginCreateForm(hWnd);
+                //devStatus = Server;
+                //SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_START_SERVER,
+                //    (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
                 break;
-            case IDM_CONTACTLIST:
-                CreateContactList(hWnd);
+            case IDM_LOGOUT:
+                SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUEST,
+                    (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
+                SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_DENY,
+                    (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
+                SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_LOGIN,
+                    (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
+                SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_LOGOUT,
+                    (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
+                devStatus = Disconnected;
+                OnDisconnectACS(hWnd, message, wParam, lParam);
+                MessageBox(hWnd, TEXT("Disconnected"), TEXT("From Access Server"), MB_OK | MB_ICONEXCLAMATION);
                 break;
             default:
                 return DefWindowProc(hWnd, message, wParam, lParam);
@@ -398,14 +416,14 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         break;
     case WM_CLIENT_LOST:
         std::cout << "WM_CLIENT_LOST" << std::endl;
-        SendMessage(hWndMain, WM_COMMAND, IDM_DISCONNECT, 0);
+        SendMessage(hWndMain, WM_COMMAND, IDM_CALL_DENY, 0);
         break;
     case WM_REMOTE_CONNECT:
-        SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CONNECT,
+        SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUEST,
             (LPARAM)MAKELONG(TBSTATE_INDETERMINATE, 0));
         break;
     case WM_REMOTE_LOST:
-        SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CONNECT,
+        SendMessage(hWndMainToolbar, TB_SETSTATE, IDM_CALL_REQUEST,
             (LPARAM)MAKELONG(TBSTATE_ENABLED, 0));
         break;
     case WM_VAD_STATE:
@@ -439,6 +457,26 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
           }
         }
         break;
+    case WM_OPEN_CONTACTLIST:
+        SendMessage(hWndMain, WM_COMMAND, IDM_CALL_REQUEST, 0);
+        break;
+    case WM_OPEN_CALLREQUEST:
+        CreateCallNotification(hWnd, (char*)lParam);
+        break;
+
+    case WM_OPEN_VIDEOSERVER:
+        EnableWindow(GetDlgItem(hWnd, IDC_CHECKBOX_LOOPBACK), false);
+        OnStartServer(hWnd, message, wParam, lParam);
+        break;
+    case WM_OPEN_VIDEOCLIENT:
+        OnConnect(hWnd, message, wParam, lParam);
+        break;
+    case WM_CLOSE_ACSCONNECT:
+        OnDisconnectACS(hWnd, message, wParam, lParam);
+        break;
+    case WM_OPEN_TWOFACTORAUTH:
+        CreateTwoFactorAuthWindow(hWnd);
+        break;
 
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
@@ -471,7 +509,7 @@ HWND CreateSimpleToolbar(HWND hWndParent)
 {
     // Declare and initialize local constants.
     const int ImageListID = 0;
-    const int numButtons = 2;
+    const int numButtons = 6;
     const int bitmapSize = 16;
 
     const DWORD buttonStyles = BTNS_AUTOSIZE;
@@ -505,14 +543,12 @@ HWND CreateSimpleToolbar(HWND hWndParent)
 
     TBBUTTON tbButtons[numButtons] =
     {
-#if 0
-        { MAKELONG(VIEW_NETCONNECT,    ImageListID), IDM_CONNECT,     TBSTATE_ENABLED,       buttonStyles, {0}, 0, (INT_PTR)L"Connect" },
-        { MAKELONG(VIEW_NETDISCONNECT, ImageListID), IDM_DISCONNECT,  TBSTATE_INDETERMINATE, buttonStyles, {0}, 0, (INT_PTR)L"Disconnect"},
-        { MAKELONG(VIEW_NETCONNECT,    ImageListID), IDM_START_SERVER,TBSTATE_ENABLED,       buttonStyles, {0}, 0, (INT_PTR)L"Start Server"},
-        { MAKELONG(VIEW_NETDISCONNECT, ImageListID), IDM_STOP_SERVER, TBSTATE_INDETERMINATE, buttonStyles, {0}, 0, (INT_PTR)L"Stop Server"},
-#endif
-        { MAKELONG(VIEW_NETCONNECT,    ImageListID), IDM_LOGIN,       TBSTATE_ENABLED,       buttonStyles, {0}, 0, (INT_PTR)L"login"},
-        { MAKELONG(VIEW_NETCONNECT,    ImageListID), IDM_CONTACTLIST, TBSTATE_ENABLED,       buttonStyles, {0}, 0, (INT_PTR)L"Contact List"},
+        { MAKELONG(VIEW_NETDISCONNECT, ImageListID), IDM_CALL_REQUEST,  TBSTATE_INDETERMINATE, buttonStyles, {0}, 0, (INT_PTR)L"   Call   " },
+        { MAKELONG(VIEW_NETDISCONNECT, ImageListID), IDM_CALL_DENY,     TBSTATE_INDETERMINATE, buttonStyles, {0}, 0, (INT_PTR)L"Call Deny"},
+        { MAKELONG(VIEW_NETDISCONNECT, ImageListID), IDM_START_SERVER,  TBSTATE_INDETERMINATE, buttonStyles, {0}, 0, (INT_PTR)L"Start Server"},
+        { MAKELONG(VIEW_NETDISCONNECT, ImageListID), IDM_STOP_SERVER,   TBSTATE_INDETERMINATE, buttonStyles, {0}, 0, (INT_PTR)L"Stop Server"},
+        { MAKELONG(VIEW_NETCONNECT,    ImageListID), IDM_LOGIN,         TBSTATE_ENABLED,       buttonStyles, {0}, 0, (INT_PTR)L" Login "},
+        { MAKELONG(VIEW_NETDISCONNECT, ImageListID), IDM_LOGOUT,        TBSTATE_INDETERMINATE, buttonStyles, {0}, 0, (INT_PTR)L"Logout"},
     };
 
     // Add buttons.
@@ -617,20 +653,23 @@ LRESULT OnSize(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 static int OnConnect(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    CStringW cstring(RemoteAddress);
+    //CStringW cstring(RemoteAddress);
 
-    PRINT(_T("Remote Address : %s Loopback %s\r\n"), cstring, Loopback ? _T("True"): _T("False"));
+    //PRINT(_T("Remote Address : %s Loopback %s\r\n"), cstring, Loopback ? _T("True"): _T("False"));
+    char IPAddr[128];
+    strcpy_s(IPAddr, (char*)lParam);
+    std::cout << "Remote Address : " << IPAddr << "Loopback : " << (Loopback ? "True" : "False") << std::endl;
  
     if (!IsVideoClientRunning())
     {
         if (OpenCamera())
         {
-            if (ConnectToSever(RemoteAddress, VIDEO_PORT))
+            if (ConnectToSever(IPAddr, VIDEO_PORT))
             {
                 std::cout << "Connected to Server" << std::endl;
                 StartVideoClient();
                 std::cout << "Video Client Started.." << std::endl;
-                VoipVoiceStart(RemoteAddress, VOIP_LOCAL_PORT, VOIP_REMOTE_PORT, VoipAttr);
+                VoipVoiceStart(IPAddr, VOIP_LOCAL_PORT, VOIP_REMOTE_PORT, VoipAttr);
                 std::cout << "Voip Voice Started.." << std::endl;
                 return 1;
             }

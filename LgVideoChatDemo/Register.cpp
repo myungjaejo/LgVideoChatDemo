@@ -67,9 +67,9 @@ LRESULT CALLBACK RegisterProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 GetWindowText(hwndRegisterCID, ContactID, maxLength);
 
                 /* empty field */
-                if (checkEmptyField(hwnd, TEXT("email"), Email, sizeof(Email)) == false) break;
-                if (checkEmptyField(hwnd, TEXT("password"), Passwd, sizeof(Passwd)) == false) break;
-                if (checkEmptyField(hwnd, TEXT("confirm password"), ConfirmPasswd, sizeof(ConfirmPasswd)) == false) break;
+                if (checkEmptyField(hwnd, TEXT("email"), Email, _tcslen(Email)) == false) break;
+                if (checkEmptyField(hwnd, TEXT("password"), Passwd, _tcslen(Passwd)) == false) break;
+                if (checkEmptyField(hwnd, TEXT("confirm password"), ConfirmPasswd, _tcslen(ConfirmPasswd)) == false) break;
 
                 /* check password rule */
                 if (checkPasswordRule(hwnd, Passwd, sizeof(Passwd)) == false) break;
@@ -103,9 +103,11 @@ LRESULT CALLBACK RegisterProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     exchangeTCHARToChar(FirstName, msg->firstName);
                     exchangeTCHARToChar(LastName, msg->lastName);
                     exchangeTCHARToChar(Address, msg->Address);
+                    msg->EmailSize = _tcslen(Email);
 
                     sendMsgtoACS((char *)msg, sizeof(TRegistration));
                     free(msg);
+                    DestroyWindow(hwnd);
                 }
                 else
                 {

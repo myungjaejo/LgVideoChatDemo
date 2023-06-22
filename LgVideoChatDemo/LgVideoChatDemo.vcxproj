@@ -44,6 +44,7 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
+    <CLRSupport>false</CLRSupport>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -107,12 +108,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\webrtcVAD\webrtcVAD\webrtc\inc;..\..\opencv\build\include;include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>K:\sss\cmu\LgVideoChatDemo05-11-23\opencv\build\include;..\webrtcVAD\webrtcVAD\webrtc\inc;..\..\opencv\build\include;include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>..\built-libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>K:\sss\cmu\main\LgVideoChatDemo\built-libs;..\built-libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>libssl.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -263,14 +264,18 @@
     <ClInclude Include="targetver.h" />
     <ClInclude Include="TcpSendRecv.h" />
     <ClInclude Include="TimeUtil.h" />
+    <ClInclude Include="TwoFactorAuth.h" />
+    <ClInclude Include="TwoFactorAuthModule.h" />
     <ClInclude Include="VideoClient.h" />
     <ClInclude Include="VideoServer.h" />
     <ClInclude Include="VoipNetwork.h" />
     <ClInclude Include="VoipVoice.h" />
     <ClInclude Include="WaveWriter.h" />
+    <ClInclude Include="NotifyCall.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AccessControlClient.cpp" />
+    <ClCompile Include="AccessControlServer.cpp" />
     <ClCompile Include="AecKsBinder.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="ContactList.cpp" />
@@ -281,9 +286,12 @@
     <ClCompile Include="LgVideoChatDemo.cpp" />
     <ClCompile Include="litevad.cpp" />
     <ClCompile Include="Login.cpp" />
+    <ClCompile Include="NotifyCall.cpp" />
     <ClCompile Include="Register.cpp" />
     <ClCompile Include="TcpSendRecv.cpp" />
     <ClCompile Include="TimeUtil.cpp" />
+    <ClCompile Include="TwoFactorAuth.cpp" />
+    <ClCompile Include="TwoFactorAuthModule.cpp" />
     <ClCompile Include="VideoClient.cpp" />
     <ClCompile Include="VideoServer.cpp" />
     <ClCompile Include="VoipNetwork.cpp" />
