@@ -10,14 +10,14 @@
 
 #define BUTTON_OK	    550
 #define BUTTON_CANCEL	551
-#define EDIT_TFA        552
+#define EDIT_EMAIL      552
 
-HWND hOKButton, hCancelButton, hInputEdit;
+HWND hFOKButton, hFInputEdit;
 static char getTFAMsg[128];
 
-LRESULT CALLBACK WindowTFAProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK WindowResetPWProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-int exchangeTCHToChar(TCHAR* target, char* outbuf)
+int exchangeTCToC(TCHAR* target, char* outbuf)
 {
     int nLength = WideCharToMultiByte(CP_ACP, 0, target, -1, NULL, 0, NULL, NULL);
     WideCharToMultiByte(CP_ACP, 0, target, -1, outbuf, nLength, NULL, NULL);
@@ -25,7 +25,7 @@ int exchangeTCHToChar(TCHAR* target, char* outbuf)
     return nLength;
 }
 
-int WINAPI CreateTwoFactorAuthWindow(HWND Phwnd)
+int WINAPI CreateResetPasswordWindow(HWND Phwnd)
 {
     //if (devStatus == Disconnected)
     //{
@@ -34,14 +34,14 @@ int WINAPI CreateTwoFactorAuthWindow(HWND Phwnd)
     //}
     // 윈도우 클래스 등록
     WNDCLASS wc = { 0 };
-    wc.lpfnWndProc = WindowTFAProc;
+    wc.lpfnWndProc = WindowResetPWProc;
     wc.hInstance = GetModuleHandle(NULL);
     wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    wc.lpszClassName = L"TFAWindowClass";
+    wc.lpszClassName = L"ResetPasswordWindowClass";
     RegisterClass(&wc);
 
     // 윈도우 생성
-    HWND hwnds = CreateWindowEx(0, L"TFAWindowClass", L"Two Factor Authentication", WS_OVERLAPPEDWINDOW,
+    HWND hwnds = CreateWindowEx(0, L"ResetPasswordWindowClass", L"Reset Password", WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, CW_USEDEFAULT, 400, 300, Phwnd, NULL, wc.hInstance, NULL);
 
     if (hwnds == NULL)
@@ -51,30 +51,30 @@ int WINAPI CreateTwoFactorAuthWindow(HWND Phwnd)
         return 1;
     }
 
-    hOKButton = CreateWindowEx(
+    hFOKButton = CreateWindowEx(
         0,
         L"BUTTON",
-        L"ACCEPT",
+        L"Send",
         WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-        50, 180, 100, 60,
+        140, 180, 100, 60,
         hwnds, (HMENU)BUTTON_OK, NULL, NULL
     );
 
-    hCancelButton = CreateWindowEx(
-        0,
-        L"BUTTON",
-        L"DENY",
-        WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-        230, 180, 100, 60,
-        hwnds, (HMENU)BUTTON_CANCEL, NULL, NULL
-    );
+    //hCancelButton = CreateWindowEx(
+    //    0,
+    //    L"BUTTON",
+    //    L"DENY",
+    //    WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+    //    230, 180, 100, 60,
+    //    hwnds, (HMENU)BUTTON_CANCEL, NULL, NULL
+    //);
 
     HWND hwndMentionLabel = CreateWindowEx(
         0,
         L"STATIC",
-        L"Please Insert\nReceived TFA Message",
+        L"Please Insert Your Email",
         WS_VISIBLE | WS_CHILD | SS_CENTER,
-        50, 20, 300, 80,
+        50, 20, 300, 40,
         hwnds, NULL, (HINSTANCE)GetWindowLongPtr(hwnds, GWLP_HINSTANCE), NULL
     );
 
@@ -96,7 +96,7 @@ int WINAPI CreateTwoFactorAuthWindow(HWND Phwnd)
     );
     SendMessage(hwndMentionLabel, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
 
-    hInputEdit = CreateWindowEx(
+    hFInputEdit = CreateWindowEx(
         WS_EX_CLIENTEDGE,
         L"EDIT",
         L"",
@@ -121,7 +121,7 @@ int WINAPI CreateTwoFactorAuthWindow(HWND Phwnd)
         DEFAULT_PITCH | FF_DONTCARE,  // 글꼴 종류
         L"Arial"               // 글꼴 이름
     );
-    SendMessage(hInputEdit, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+    SendMessage(hFInputEdit, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
 
     // 윈도우 표시
     ShowWindow(hwnds, SW_SHOW);
@@ -138,7 +138,7 @@ int WINAPI CreateTwoFactorAuthWindow(HWND Phwnd)
     return (int)msg.wParam;
 }
 
-LRESULT CALLBACK WindowTFAProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK WindowResetPWProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     switch (uMsg)
     {
@@ -149,36 +149,34 @@ LRESULT CALLBACK WindowTFAProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
         {
         case BUTTON_OK:
         {
-            TCHAR InputTFA[RECEVER_LENTH] = TEXT("");            
-            GetWindowText(hInputEdit, InputTFA, RECEVER_LENTH);
-            TTwoFactor* tMsg = (TTwoFactor*)std::malloc(sizeof(TTwoFactor));
-            if (devStatus == ResetPassword)
-                tMsg->MessageType = ChangePasswordRequest;
-            else
-            {
-                tMsg->MessageType = TwoFactorRequest;
-                strcpy_s(tMsg->myCID, MyID);
-            }
-            exchangeTCHToChar(InputTFA, tMsg->TFA);
-            std::cout << tMsg->TFA << std::endl;
-            
-            sendMsgtoACS((char*)tMsg, sizeof(TTwoFactor));
-            free(tMsg);        
+            TCHAR InputTFA[RECEVER_LENTH] = TEXT("");
+            GetWindowText(hFInputEdit, InputTFA, RECEVER_LENTH);
+            TLogin* tMsg = (TLogin*)std::malloc(sizeof(TLogin));
+            tMsg->MessageType = ResetPasswordRequest;           
 
-            DestroyWindow(hwnd);
-            break;
-        }
-        case BUTTON_CANCEL:
-        {
-            TTwoFactor* tMsg = (TTwoFactor*)std::malloc(sizeof(TTwoFactor));
-            tMsg->MessageType = TwoFactorRequest;
+            //strcpy_s(tMsg->email, MyID);
+            exchangeTCToC(InputTFA, tMsg->email);
+            int sLen = strlen(tMsg->email);
+            tMsg->EmailSize = sLen;
+            std::cout << tMsg->email << std::endl;
 
-            sendMsgtoACS((char*)tMsg, sizeof(TTwoFactor));
+            sendMsgtoACS((char*)tMsg, sizeof(TLogin));
             free(tMsg);
-            //strcpy_s(MyID. NULL);
+
             DestroyWindow(hwnd);
             break;
         }
+        //case BUTTON_CANCEL:
+        //{
+        //    TTwoFactor* tMsg = (TTwoFactor*)std::malloc(sizeof(TTwoFactor));
+        //    tMsg->MessageType = TwoFactorRequest;
+
+        //    sendMsgtoACS((char*)tMsg, sizeof(TTwoFactor));
+        //    free(tMsg);
+        //    //strcpy_s(MyID. NULL);
+        //    DestroyWindow(hwnd);
+        //    break;
+        //}
         }
     }
     break;
@@ -193,17 +191,15 @@ LRESULT CALLBACK WindowTFAProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 
     case WM_DESTROY:
     {
-        DestroyWindow(hOKButton);
-        DestroyWindow(hCancelButton);
-        DestroyWindow(hInputEdit);
+        DestroyWindow(hFOKButton);
+        DestroyWindow(hFInputEdit);
         DestroyWindow(hwnd);
         return 0;
     }
     case WM_CLOSE:
     {
-        DestroyWindow(hOKButton);
-        DestroyWindow(hCancelButton);
-        DestroyWindow(hInputEdit);
+        DestroyWindow(hFOKButton);
+        DestroyWindow(hFInputEdit);
         DestroyWindow(hwnd);
         return 0;
     }

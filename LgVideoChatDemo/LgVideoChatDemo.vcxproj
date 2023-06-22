@@ -134,11 +134,13 @@
     <ClInclude Include="AccessControlServer.h" />
     <ClInclude Include="AecKsBinder.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="ChangePassword.h" />
     <ClInclude Include="ContactList.h" />
     <ClInclude Include="definition.h" />
     <ClInclude Include="DisplayImage.h" />
     <ClInclude Include="filemanager.h" />
     <ClInclude Include="FixedSizeQueue.h" />
+    <ClInclude Include="ForgetPassword.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="json\json-forwards.h" />
     <ClInclude Include="json\json.h" />
@@ -164,9 +166,11 @@
     <ClCompile Include="AccessControlServer.cpp" />
     <ClCompile Include="AecKsBinder.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="ChangePassword.cpp" />
     <ClCompile Include="ContactList.cpp" />
     <ClCompile Include="DisplayImage.cpp" />
     <ClCompile Include="filemanager.cpp" />
+    <ClCompile Include="ForgetPassword.cpp" />
     <ClCompile Include="jsoncpp.cpp" />
     <ClCompile Include="LgVideoChatDemo.cpp" />
     <ClCompile Include="litevad.cpp" />

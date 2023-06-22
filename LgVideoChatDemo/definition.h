@@ -53,6 +53,14 @@ typedef struct oTwoFactor {
 	char TFA[TWOFACTOR_BUFSIZE];
 }TTwoFactor;
 
+typedef struct oReRegistration {
+	unsigned char MessageType;
+	unsigned int EmailSize;
+	char email[EMAIL_BUFSIZE];
+	unsigned int PasswordSize;
+	char password[PASSWORD_BUFSIZE];
+}TReRegistration;
+
 typedef struct oContactList {
 	unsigned char MessageType;
 	unsigned char ListSize;
@@ -105,6 +113,12 @@ typedef enum {
 	RequestCall,
 	AcceptCall,
 	RejectCall,
+	ResetPasswordRequest,
+	ResetPasswordResponse,
+	ChangePasswordRequest,
+	ChangePasswordResponse,
+	ReRegPasswordRequest,
+	ReRegPasswordResponse,
 	TwoFactorRequest,
 	TwoFactorResponse
 }TNetworkCommand;
@@ -117,5 +131,6 @@ typedef enum {
 	Callee,
 	Calling,
 	VaildTwoFactor,
+	ResetPassword,
 	Server = 31967	
 }TStatus;

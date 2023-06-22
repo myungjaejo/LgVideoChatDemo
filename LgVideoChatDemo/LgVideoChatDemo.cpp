@@ -26,6 +26,8 @@
 #include "ContactList.h"
 #include "NotifyCall.h"
 #include "TwoFactorAuthModule.h"
+#include "ForgetPassword.h"
+#include "ChangePassword.h"
 
 #pragma comment(lib,"comctl32.lib")
 #ifdef _DEBUG
@@ -476,6 +478,12 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         break;
     case WM_OPEN_TWOFACTORAUTH:
         CreateTwoFactorAuthWindow(hWnd);
+        break;
+     case WM_OPEN_RESETPASSWORD:
+        CreateResetPasswordWindow(hWnd);
+        break;
+    case WM_OPEN_REREGPASSWORD:
+        ReRegisterCreateForm(hWnd);
         break;
 
     default:

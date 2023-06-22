@@ -422,6 +422,24 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
         }
         break;
     }
+    case ResetPasswordResponse:
+    {
+        TStatusInfo* rMsg = (TStatusInfo*)data;
+        if (rMsg->status == ResetPassword)
+        {
+            devStatus = ResetPassword;
+            strcpy_s(MyID, rMsg->myCID);
+            PostMessage(hWndMain, WM_OPEN_TWOFACTORAUTH, 0, 0);
+        }
+        else
+
+        break;
+    }
+    case ChangePasswordResponse:
+    {
+         
+        break;
+    }
     case LogoutResponse:
     {
         break;

@@ -542,7 +542,6 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 					strcpy_s(feedback->myCID, myCID);
 					sendto(__InputSock, (char*)feedback, sizeof(TStatusInfo), 0, (sockaddr*)&sockip, socklen);
 					free(feedback);
-					return true;
 				}
 			}
 			else
@@ -556,7 +555,6 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 					strcpy_s(feedback->myCID, myCID);
 					sendto(__InputSock, (char*)feedback, sizeof(TStatusInfo), 0, (sockaddr*)&sockip, socklen);
 					free(feedback);
-					return true;
 				}
 			}
 			break;
@@ -684,6 +682,61 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 			}
 			break;
 		}
+		case ResetPasswordRequest:
+		{
+			TLogin* msg = (TLogin*)data;
+			bool Status = false;
+
+			std::vector<TRegistration*>::iterator iter;
+			for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
+			{
+				if (!strcmp(msg->email, (*iter)->email))
+				{
+					Status = true;
+					break;
+				}
+			}
+			
+			TStatusInfo* sMsg = (TStatusInfo*)std::malloc(sizeof(TStatusInfo));
+			sMsg->MessageType = ResetPasswordResponse;
+			sMsg->status = Disconnected;
+			if (Status)
+			{
+				SendTFA(msg->email);
+				strcpy_s(sMsg->myCID, msg->email);
+				sMsg->status = ResetPassword;
+			}
+			send(__InputSock, (char*)sMsg, sizeof(TStatusInfo), 0);
+			break;
+		}
+		case ChangePasswordRequest:
+		{
+			TTwoFactor* tMsg = (TTwoFactor*)data;
+			TStatus resp = Disconnected;
+			char myCID[NAME_BUFSIZE] = "None";
+			std::cout << "RECEIVED TOKEN : " << tMsg->TFA << std::endl;			
+			TStatusInfo* feedback = (TStatusInfo*)std::malloc(sizeof(TStatusInfo));
+
+			int iResult = ReadTFA(tMsg->TFA);
+			if (iResult == TFA_SUCCESS)
+			{
+				feedback->status = ResetPassword;
+			}
+			else
+			{
+				feedback->status = Disconnected;
+				std::cout << "Wrong Value - ret : " << iResult << std::endl;
+			}
+			if (feedback != NULL)
+			{
+				feedback->MessageType = ChangePasswordResponse;
+				sendto(__InputSock, (char*)feedback, sizeof(TStatusInfo), 0, (sockaddr*)&sockip, socklen);
+				free(feedback);
+			}
+
+			break;
+		}
+
 		default:
 			break;
 	}
