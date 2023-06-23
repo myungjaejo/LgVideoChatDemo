@@ -72,11 +72,14 @@ std::string aes256cbc_decrypt(const std::string& cipherText, const std::string& 
 }
 
 void save_encrypted_json(const Json::Value& root, const std::string& filename) {
+    // JsonCpp의 JValue를 문자열로 변환
     Json::StreamWriterBuilder writer;
     std::string jsonStr = Json::writeString(writer, root);
 
+    // 암호화
     std::string jsonStrEnc = aes256cbc_encrypt(jsonStr, key, iv);
 
+    // 암호화된 데이터 파일에 저장
     std::ofstream file(filename, std::ios::binary);
     if (!file.is_open()) {
         std::cerr << "Failed to open file for writing." << std::endl;
@@ -89,6 +92,7 @@ void save_encrypted_json(const Json::Value& root, const std::string& filename) {
 }
 
 Json::Value load_encrypted_json(const std::string& filename) {
+    // 암호화된 데이터 파일 읽기
     std::ifstream file(filename, std::ios::binary);
     if (!file.is_open()) {
         std::cerr << "Failed to open file for reading." << std::endl;
@@ -102,9 +106,11 @@ Json::Value load_encrypted_json(const std::string& filename) {
     buffer << file.rdbuf();
     file.close();
 
+    // 암호화된 데이터 복호화 하기
     std::string jsonStrEnc = buffer.str();
     std::string jsonStr = aes256cbc_decrypt(jsonStrEnc, key, iv);
 
+    // 혹호화된 string을 json으로 변환
     Json::Value root(jsonStr);
     Json::Reader reader;
     bool ret = reader.parse(jsonStr, root);
@@ -113,44 +119,6 @@ Json::Value load_encrypted_json(const std::string& filename) {
     std::cout << root << std::endl;
     return root;
 }
-
-/*
-// write
-bool WriteToFile(const char* filename, const char* buffer, int len)
-{
-    FILE* fp = nullptr;
-    fopen_s(&fp, filename, "wb");
-
-    if (fp == nullptr)
-    {
-        return false;
-    }
-
-    size_t fileSize = fwrite(buffer, 1, len, fp);
-
-    fclose(fp);
-
-    return true;
-}
-
-// read
-bool ReadFromFile(const char* filename, char* buffer, int len)
-{
-    FILE* fp = nullptr;
-    fopen_s(&fp, filename, "rb");
-
-    if (fp == nullptr)
-    {
-        return false;
-    }
-
-    size_t fileSize = fread(buffer, 1, len, fp);
-
-    fclose(fp);
-
-    return true;
-}
-*/
 
 bool StoreData(std::vector<TRegistration*> data)
 {
@@ -176,10 +144,7 @@ bool StoreData(std::vector<TRegistration*> data)
     Json::StyledWriter writer;
     std::string outputConfig = writer.write(root);
 
-    std::ofstream fout(DATA_FILE_NAME);
-    fout << root;
-
-    save_encrypted_json(root, std::string("test.dat"));
+    save_encrypted_json(root, std::string(DATA_FILE_NAME));
 
     return true;
 }
@@ -211,6 +176,10 @@ bool StoreData(const TRegistration* data, size_t size)
 bool LoadData(TRegistration* data, int idx)
 {
     Json::Value root = load_encrypted_json(std::string(DATA_FILE_NAME));
+
+    if (root.size() <= idx)
+        return false;
+
     Json::Value user = root[idx];
 
     strncpy_s(data->email, user[STR_EMAIL].asString().c_str(), 128);
@@ -266,11 +235,27 @@ void test_filemanager()
     strcpy_s(data[4].firstName, "firstname4");
     strcpy_s(data[4].Address, "address4");
 
-    StoreData(data, 5);
+    //StoreData(data, 5);
+
+    std::vector<TRegistration*> data_vec;
+    for (int i = 0; i < 5; i++)
+        data_vec.push_back(&data[i]);
+
+    StoreData(data_vec);
 
     TRegistration read_data;
-    LoadData(&read_data, 3);
-    printFileObj(&read_data);
+    if (LoadData(&read_data, 0))
+        printFileObj(&read_data);
+    if (LoadData(&read_data, 1))
+        printFileObj(&read_data);
+    if (LoadData(&read_data, 2))
+        printFileObj(&read_data);
+    if (LoadData(&read_data, 3))
+        printFileObj(&read_data);
+    if (LoadData(&read_data, 4))
+        printFileObj(&read_data);
+    if (LoadData(&read_data, 5))
+        printFileObj(&read_data);
 }
 */
 
