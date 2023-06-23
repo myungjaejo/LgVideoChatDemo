@@ -9,4 +9,4 @@ bool LoadData(TRegistration* data, int idx);
 int getLengthJSON(void);
 void printFileObj(const TRegistration* data);
 
-// void test_filemanager();
+//void test_filemanager();

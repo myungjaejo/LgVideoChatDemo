@@ -36,10 +36,7 @@ static DWORD ThreadACClientID;
 static DWORD WINAPI ThreadACClient(LPVOID ivalue);
 static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in sockip, int socklen);
 static int OnConnect(char* IPAddr);
-char MyEmail[GENERAL_BUFSIZE]{};
 
-extern bool IsLogin;
-extern char ContactList[MAX_DEVSIZE][GENERAL_BUFSIZE];
 extern HWND hwndCreateRegister, hwndLogin;
 
 SSL* Clientssl;
@@ -143,6 +140,13 @@ bool ConnectToACSever(const char* remotehostname, unsigned short remoteport)
     }
     SSL_CTX_set_verify(sslContext, SSL_VERIFY_PEER, verify_callback);
     Clientssl = SSL_new(sslContext);
+
+    if (Clientssl == NULL) {
+        printf("Failed to create SSL.\n");
+        closesocket(Client);
+        WSACleanup();
+        return 1;
+    }
 
     iResult = getaddrinfo(remotehostname, remoteportno, &hints, &result);
     if (iResult != 0)
@@ -352,8 +356,8 @@ static DWORD WINAPI ThreadACClient(LPVOID ivalue)
 int sendMsgtoACS(char* data, int len)
 {
     size_t sent;
-
-    return SSL_write_ex(Clientssl, data, len, &sent);
+	SSL_write_ex(Clientssl, data, len, &sent);
+    return sent;
 }
 
 
@@ -481,6 +485,7 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
                 msg->MessageType = RequestContactList;
                 msg->answer = true;
                 sendMsgtoACS((char*)msg, sizeof(TCommandOnly));
+                free(msg);
             }
         }
         else
@@ -491,6 +496,29 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
         }
         break;
     }
+    case ResetPasswordResponse:
+    {
+        TStatusInfo* rMsg = (TStatusInfo*)data;
+        if (rMsg->status == ResetPassword)
+        {
+            devStatus = ResetPassword;
+            strcpy_s(MyID, rMsg->myCID);
+            PostMessage(hWndMain, WM_OPEN_TWOFACTORAUTH, 0, 0);
+        }
+
+        break;
+    }
+    case ChangePasswordResponse:
+    {
+        PostMessage(hWndMain, WM_OPEN_REREGPASSWORD, 0, 0);
+        break;
+    }
+    case ReRegPasswordResponse:
+    {
+        std::cout << "passwd chaged" << std::endl;
+        break;
+    }
+
     case LogoutResponse:
     {
         break;
@@ -524,7 +552,6 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
                 makeContactList(parse, false);
             }
            
-            //CreateContactList(NULL);
             PostMessage(hWndMain, WM_OPEN_CONTACTLIST, 0, 0);
             std::cout << "make contact list" << std::endl;
         }

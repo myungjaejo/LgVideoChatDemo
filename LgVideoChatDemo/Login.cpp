@@ -13,6 +13,7 @@
 #include "include/openssl/sha.h"
 #include <openssl/bio.h>
 #include <openssl/evp.h>
+#include "ForgetPassword.h"
 
 #pragma comment(lib, "..\\built-libs\\libcrypto.lib")
 
@@ -219,8 +220,8 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 }
                 case BUTTON_FORGETPASSWD:
                 {
-                    CreateForgetPasswd(hwnd);
                     //MessageBox(hwnd, TEXT("BUTTON_FORGETPASSWD"), TEXT("TEST"), MB_OK | MB_ICONEXCLAMATION);
+                    CreateResetPasswordWindow(hwnd);
                     break;
                 }
                 default:

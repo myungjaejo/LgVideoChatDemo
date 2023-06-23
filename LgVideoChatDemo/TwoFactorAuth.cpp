@@ -10,6 +10,7 @@
 #include <wininet.h>
 #include <stdio.h>
 #include "TwoFactorAuth.h"
+#include "Logger.h"
 
 #pragma comment(lib, "wininet.lib")
 
@@ -22,6 +23,9 @@ static const char dataset[] =
 char random_token[RANDOM_LENTH];
 ch::time_point<ch::high_resolution_clock> start;
 ch::time_point<ch::high_resolution_clock> end;
+
+const char* admin_id = " lgss23.team2";
+const char* admin_passwd = "bbmugvpajgoanzbu";
 
 
 void MakeRandomToken()
@@ -59,8 +63,6 @@ int CheckToken(char* input_token, int sec)
 
 void TFAProcess(const char* reciver)
 {
-    const char* admin_id = "myungjae.jo";
-    const char* admin_passwd = "tismcfzrjuvoadww";
     const char* smtp_server = "smtp.gmail.com";
     const char* body_tokne = random_token;
 
@@ -101,7 +103,11 @@ void TFAProcess(const char* reciver)
 
     //std::cout << command.c_str() << std::endl;
 
-    system(command.c_str());
+    int ret = system(command.c_str());
+    if (ret)
+        LOG("failed to send TFA");
+    else
+        LOG("succeded to send TFA");
 }
 
 void SendTFA(char* reciver)

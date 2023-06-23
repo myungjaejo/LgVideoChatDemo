@@ -18,6 +18,7 @@
 #include "filemanager.h"
 #include "VideoServer.h"
 #include "TwoFactorAuth.h"
+#include "Logger.h"
 
 #pragma comment(lib, "libssl.lib")
 #pragma comment(lib, "libcrypto.lib")
@@ -344,6 +345,7 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 							if (tmp.ASocket == INVALID_SOCKET)
 							{
 								std::cout << "Accept Failed " << std::endl;
+								return 1;
 							}
 
 							ssl = SSL_new(sslContext);
@@ -447,7 +449,7 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 					}
 					else
 					{
-						char testText[1024];
+						char testText[4096] = {0,};
 						int result = 0;
 						sockaddr_in saFrom{};
 						int nFromLen = sizeof(sockaddr_in);
@@ -539,19 +541,20 @@ static int RecvHandler(TSocketManager *smgr, char* data, int datasize, sockaddr_
 
 		if (RegistrationUserData(regData))
 		{
-			TCommandOnly* feedback = (TCommandOnly*)std::malloc(sizeof(TCommandOnly));
 			if (sendCommandOnlyMsg(smgr, sockip, socklen, true) != NULL)
 			{
 
 			}
 			else
 			{
+				sendCommandOnlyMsg(smgr, sockip, socklen, false);
 				// TODO : ERROR
 				std::cout << "memory error - malloc" << std::endl;
 			}
 		}
 		else
 		{
+			sendCommandOnlyMsg(smgr, sockip, socklen, false);
 			//TODO :: ERROR
 			std::cout << "Full data error" << std::endl;
 		}
@@ -574,9 +577,6 @@ static int RecvHandler(TSocketManager *smgr, char* data, int datasize, sockaddr_
 		std::vector<TRegistration*>::iterator iter;
 		for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
 		{
-			// need to implement compare email and pwhash !!
-			TStatusInfo* feedback = (TStatusInfo*)std::malloc(sizeof(TStatusInfo));
-
 			if (!strncmp((*iter)->email, LoginData->email, (*iter)->EmailSize))
 			{
 				if (!strncmp((*iter)->password, LoginData->passwordHash, (*iter)->PasswordSize))
@@ -675,7 +675,6 @@ static int RecvHandler(TSocketManager *smgr, char* data, int datasize, sockaddr_
 				feedback->status = Connected;
 				strcpy_s(feedback->myCID, myCID);
 				SSL_write(smgr->ssl, (char*)feedback, sizeof(TStatusInfo));
-				//sendto(__InputSock, (char*)feedback, sizeof(TStatusInfo), 0, (sockaddr*)&sockip, socklen);
 				free(feedback);
 				return true;
 			}
@@ -690,7 +689,6 @@ static int RecvHandler(TSocketManager *smgr, char* data, int datasize, sockaddr_
 				feedback->status = Disconnected;
 				strcpy_s(feedback->myCID, myCID);
 				SSL_write(smgr->ssl, (char*)feedback, sizeof(TStatusInfo));
-				//sendto(__InputSock, (char*)feedback, sizeof(TStatusInfo), 0, (sockaddr*)&sockip, socklen);
 				free(feedback);
 				return true;
 			}
@@ -723,7 +721,6 @@ static int RecvHandler(TSocketManager *smgr, char* data, int datasize, sockaddr_
 		std::cout << "merge data : " << clist.ListBuf << std::endl;
 		// send contact list
 		SSL_write(smgr->ssl, (char*)&clist, sizeof(clist));
-		//sendto(__InputSock, (char*)&clist, sizeof(clist), 0, (sockaddr*)&sockip, socklen);
 
 		break;
 	}
@@ -757,7 +754,6 @@ static int RecvHandler(TSocketManager *smgr, char* data, int datasize, sockaddr_
 					if (!strcmp((*iitt).Owner, (*iter)->ContactID))
 					{
 						std::cout << "transfer request : " << msg.FromDevID << " -> " << msg.ToDevID << " / " << (*iitt).IPAddr << std::endl;
-						//int ret = send((*iitt).ASocket, (char*)&msg, sizeof(msg), 0);
 						int ret = SSL_write((*iitt).ssl, (char*)&msg, sizeof(msg));
 						std::cout << (*iitt).ASocket << ", " << ret << std::endl;
 						break;
@@ -795,7 +791,6 @@ static int RecvHandler(TSocketManager *smgr, char* data, int datasize, sockaddr_
 				strcpy_s(msg.FromDevID, fromDev);
 				strcpy_s(msg.ToDevID, dev_id);
 
-				//send((*iter).ASocket, (char*)&msg, sizeof(msg), 0);
 				SSL_write((*iter).ssl, (char*)&msg, sizeof(msg));
 				std::cout << "Accept call : " << msg.FromDevID << " -> " << msg.ToDevID << " / " << msg.IPAddress << std::endl;
 				break;
@@ -819,7 +814,6 @@ static int RecvHandler(TSocketManager *smgr, char* data, int datasize, sockaddr_
 
 			strcpy_s(msg.FromDevID, fromDev);
 			strcpy_s(msg.ToDevID, dev_id);
-			//sendto(__InputSock, (char*)&msg, sizeof(msg), 0, (sockaddr*)&sockto, iResult);
 			SSL_write(smgr->ssl, (char*)&msg, sizeof(msg));
 		}
 		break;
@@ -843,6 +837,94 @@ static int RecvHandler(TSocketManager *smgr, char* data, int datasize, sockaddr_
 
 		//int sent = sendto(__InputSock, (char*)&rsp, sizeof(TMissedCall), 0, (sockaddr*)&sockip, socklen);
 		SSL_write(smgr->ssl, (char*)&rsp, sizeof(TMissedCall));
+		break;
+	}
+
+	case ResetPasswordRequest:
+	{
+		TLogin* msg = (TLogin*)data;
+		bool Status = false;
+
+		std::vector<TRegistration*>::iterator iter;
+		for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
+		{
+			if (!strcmp(msg->email, (*iter)->email))
+			{
+				Status = true;
+				break;
+			}
+		}
+
+		TStatusInfo* sMsg = (TStatusInfo*)std::malloc(sizeof(TStatusInfo));
+		if (sMsg)
+		{
+			sMsg->MessageType = (unsigned char)ResetPasswordResponse;
+			sMsg->status = Disconnected;
+			if (Status)
+			{
+				SendTFA(msg->email);
+				strcpy_s(sMsg->myCID, msg->email);
+				sMsg->status = ResetPassword;
+			}
+			SSL_write(smgr->ssl, (char*)sMsg, sizeof(TStatusInfo));
+			free(sMsg);
+		}
+		break;
+	}
+	case ChangePasswordRequest:
+	{
+		TTwoFactor* tMsg = (TTwoFactor*)data;
+		TStatus resp = Disconnected;
+		char myCID[NAME_BUFSIZE] = "None";
+		std::cout << "RECEIVED TOKEN : " << tMsg->TFA << std::endl;
+		TStatusInfo* feedback = (TStatusInfo*)std::malloc(sizeof(TStatusInfo));
+
+		int iResult = ReadTFA(tMsg->TFA);
+		if (iResult == TFA_SUCCESS)
+		{
+			feedback->status = ResetPassword;
+		}
+		else
+		{
+			feedback->status = (unsigned char)Disconnected;
+			std::cout << "Wrong Value - ret : " << iResult << std::endl;
+		}
+
+		if (feedback != NULL)
+		{
+			feedback->MessageType = ChangePasswordResponse;
+			SSL_write(smgr->ssl, (char*)feedback, sizeof(TStatusInfo));
+			free(feedback);
+		}
+
+		break;
+	}
+
+	case ReRegPasswordRequest:
+	{
+		TReRegistration* msg = (TReRegistration*)data;
+		TStatus resp = Disconnected;
+
+		std::vector<TRegistration*>::iterator iter;
+		for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
+		{
+			if (!strcmp(msg->email, (*iter)->email))
+			{
+				std::cout << "Re-Registration Password to " << (*iter)->email << std::endl;
+				memcpy((*iter)->password, msg->password, msg->PasswordSize);
+				break;
+			}
+		}
+
+		TStatusInfo* feedback = (TStatusInfo*)std::malloc(sizeof(TStatusInfo));
+
+		if (feedback != NULL)
+		{
+			feedback->MessageType = ChangePasswordResponse;
+			SSL_write(smgr->ssl, (char*)feedback, sizeof(TStatusInfo));
+			free(feedback);
+		}
+
 		break;
 	}
 
@@ -910,7 +992,6 @@ bool sendCommandOnlyMsg(TSocketManager *smgr, sockaddr_in sockip, int socklen, b
 	{
 		feedback->MessageType = RegistrationResponse;
 		feedback->answer = answer;
-		//sendto(__InputSock, (char*)feedback, sizeof(TCommandOnly), 0, (sockaddr*)&sockip, socklen);
 		SSL_write(smgr->ssl, (char*)feedback, sizeof(TCommandOnly));
 		free(feedback);
 		return true;
@@ -926,7 +1007,6 @@ bool sendStatusMsg(TSocketManager *smgr, sockaddr_in sockip, int socklen, char* 
 		feedback->MessageType =LoginResponse;
 		feedback->status = status;
 		strcpy_s(feedback->myCID, cid);
-		//sendto(__InputSock, (char*)feedback, sizeof(TStatusInfo), 0, (sockaddr*)&sockip, socklen);
 		SSL_write(smgr->ssl, (char*)feedback, sizeof(TStatusInfo));
 		free(feedback);
 		return true;
@@ -943,6 +1023,9 @@ void setMacro(SOCKET __InputSock,TRegistration* regData)
 	{
 		ctime_s(buf,128, &end_time);
 		strcpy_s(regData->LastRegistTime, buf);
+	} else{
+		LOG("Failed to alloc buf\n");
+		return;
 	}
 
 	char ipbuf[32];
@@ -954,6 +1037,7 @@ void setMacro(SOCKET __InputSock,TRegistration* regData)
 
 	std::cout << "IP address - " << ipbuf << std::endl;
 	strcpy_s(regData->LastIPAddress, 32, ipbuf);
+	free(buf);
 }
 
 char* getFromAddr(SOCKET __InputSock)

@@ -1,32 +1,12 @@
 [
 	{
-		"IP" : "192.168.68.106",
+		"IP" : "192.168.68.101",
 		"address" : "",
-		"contactID" : "cat",
-		"email" : "cat@cmu.edu",
-		"firstName" : "cat",
-		"lastAccess" : "Tue Jun 20 16:03:43 2023\n",
-		"lastName" : "",
-		"password" : "B61EBFFD47B67A399358AB803D3411BF353A53C9EEA8AF0BFA08732EC39EECB9"
-	},
-	{
-		"IP" : "192.168.68.105",
-		"address" : "",
-		"contactID" : "alice",
-		"email" : "alice@cmu.edu",
+		"contactID" : "lgelhi@gmail",
+		"email" : "lgelhi@gmail.com",
 		"firstName" : "",
-		"lastAccess" : "Tue Jun 20 16:04:34 2023\n",
+		"lastAccess" : "Fri Jun 23 18:12:25 2023\n",
 		"lastName" : "",
-		"password" : "032FF7A0CCDD957511F6500D16AAD29FABB8EEF396955B369E56DCEE8F7D585A"
-	},
-	{
-		"IP" : "192.168.68.106",
-		"address" : "",
-		"contactID" : "moonsik",
-		"email" : "moonsikn@andrew.cmu.edu",
-		"firstName" : "",
-		"lastAccess" : "Wed Jun 21 20:13:44 2023\n",
-		"lastName" : "",
-		"password" : "73F7E91CB6459593762097A71C9AD480153F2E8DA4CC77D29F1C46EC66DE76F5"
+		"password" : "B9CE572DFCC09F9F0F0C9FF406DA97E213E913E11781193B35458EAF11214B2D"
 	}
 ]

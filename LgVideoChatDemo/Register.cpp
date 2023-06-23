@@ -70,6 +70,7 @@ LRESULT CALLBACK RegisterProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 if (checkEmptyField(hwnd, TEXT("email"), Email, _tcslen(Email)) == false) break;
                 if (checkEmptyField(hwnd, TEXT("password"), Passwd, _tcslen(Passwd)) == false) break;
                 if (checkEmptyField(hwnd, TEXT("confirm password"), ConfirmPasswd, _tcslen(ConfirmPasswd)) == false) break;
+                if (checkEmptyField(hwnd, TEXT("ContactID"), ContactID, _tcslen(ContactID)) == false) break;
 
                 /* check password rule */
                 if (checkPasswordRule(hwnd, Passwd, sizeof(Passwd)) == false) break;
