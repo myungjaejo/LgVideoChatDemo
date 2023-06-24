@@ -31,6 +31,7 @@ std::string generateRandomBytes(int size)
     return randomBytes;
 }
 
+#if 0
 std::string aes256cbc_encrypt(const std::string& plainText, const std::string& key, const std::string& iv)
 {
     std::string cipherText;
@@ -51,7 +52,139 @@ std::string aes256cbc_encrypt(const std::string& plainText, const std::string& k
     delete[] paddedPlainText;
     return cipherText;
 }
+#endif
 
+std::string aes256cbc_encrypt(const std::string& plainText, const std::string& keyStr, const std::string& ivStr) {
+    std::string cipherText;
+
+    // 평문을 unsigned char 배열로 변환
+    std::vector<unsigned char> plainTextData(plainText.begin(), plainText.end());
+
+    // 키와 IV를 unsigned char 배열로 변환
+    std::vector<unsigned char> key(keyStr.begin(), keyStr.end());
+    std::vector<unsigned char> iv(ivStr.begin(), ivStr.end());
+
+    // 암호화 컨텍스트 생성
+    EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+    if (!ctx) {
+        std::cerr << "Failed to create encryption context." << std::endl;
+        return cipherText;
+    }
+
+    // 암호화 초기화
+    if (EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), nullptr, nullptr, nullptr) != 1) {
+        std::cerr << "Failed to initialize encryption." << std::endl;
+        EVP_CIPHER_CTX_free(ctx);
+        return cipherText;
+    }
+
+    // 키와 IV 설정
+    if (EVP_CIPHER_CTX_set_key_length(ctx, AES_KEY_SIZE) != 1) {
+        std::cerr << "Failed to set key length." << std::endl;
+        EVP_CIPHER_CTX_free(ctx);
+        return cipherText;
+    }
+    if (EVP_EncryptInit_ex(ctx, nullptr, nullptr, key.data(), iv.data()) != 1) {
+        std::cerr << "Failed to set key and IV." << std::endl;
+        EVP_CIPHER_CTX_free(ctx);
+        return cipherText;
+    }
+
+    // 암호화 버퍼 크기 계산
+    int cipherTextLen = plainTextData.size() + EVP_CIPHER_CTX_block_size(ctx);
+    cipherText.resize(cipherTextLen);
+
+    // 암호화 수행
+    if (EVP_EncryptUpdate(ctx, (unsigned char*)(cipherText.data()), &cipherTextLen, plainTextData.data(), plainTextData.size()) != 1) {
+        std::cerr << "Failed to perform encryption." << std::endl;
+        EVP_CIPHER_CTX_free(ctx);
+        return cipherText;
+    }
+
+    // 암호화 마무리
+    int finalLen = 0;
+    if (EVP_EncryptFinal_ex(ctx, (unsigned char*)(cipherText.data()) + cipherTextLen, &finalLen) != 1) {
+        std::cerr << "Failed to finalize encryption." << std::endl;
+        EVP_CIPHER_CTX_free(ctx);
+        return cipherText;
+    }
+
+    // 암호화된 데이터 길이 조정
+    cipherTextLen += finalLen;
+    cipherText.resize(cipherTextLen);
+
+    // 암호화 컨텍스트 정리
+    EVP_CIPHER_CTX_free(ctx);
+
+    return cipherText;
+}
+
+std::string aes256cbc_decrypt(const std::string& cipherText, const std::string& keyStr, const std::string& ivStr) {
+    std::string plainText;
+
+    // 암호문을 unsigned char 배열로 변환
+    std::vector<unsigned char> cipherTextData(cipherText.begin(), cipherText.end());
+
+    // 키와 IV를 unsigned char 배열로 변환
+    std::vector<unsigned char> key(keyStr.begin(), keyStr.end());
+    std::vector<unsigned char> iv(ivStr.begin(), ivStr.end());
+
+    // 복호화 컨텍스트 생성
+    EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+    if (!ctx) {
+        std::cerr << "Failed to create decryption context." << std::endl;
+        return plainText;
+    }
+
+    // 복호화 초기화
+    if (EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), nullptr, nullptr, nullptr) != 1) {
+        std::cerr << "Failed to initialize decryption." << std::endl;
+        EVP_CIPHER_CTX_free(ctx);
+        return plainText;
+    }
+
+    // 키와 IV 설정
+    if (EVP_CIPHER_CTX_set_key_length(ctx, AES_KEY_SIZE) != 1) {
+        std::cerr << "Failed to set key length." << std::endl;
+        EVP_CIPHER_CTX_free(ctx);
+        return plainText;
+    }
+    if (EVP_DecryptInit_ex(ctx, nullptr, nullptr, key.data(), iv.data()) != 1) {
+        std::cerr << "Failed to set key and IV." << std::endl;
+        EVP_CIPHER_CTX_free(ctx);
+        return plainText;
+    }
+
+    // 복호화 버퍼 크기 계산
+    int plainTextLen = cipherTextData.size();
+    plainText.resize(plainTextLen);
+
+    // 복호화 수행
+    if (EVP_DecryptUpdate(ctx, (unsigned char*)(plainText.data()), &plainTextLen, cipherTextData.data(), cipherTextData.size()) != 1) {
+        std::cerr << "Failed to perform decryption." << std::endl;
+        EVP_CIPHER_CTX_free(ctx);
+        return plainText;
+    }
+
+    // 복호화 마무리
+    int finalLen = 0;
+    if (EVP_DecryptFinal_ex(ctx, (unsigned char*)(plainText.data()) + plainTextLen, &finalLen) != 1) {
+        std::cerr << "Failed to finalize decryption." << std::endl;
+        EVP_CIPHER_CTX_free(ctx);
+        return plainText;
+    }
+
+    // 복호화된 데이터 길이 조정
+    plainTextLen += finalLen;
+    plainText.resize(plainTextLen);
+
+    // 복호화 컨텍스트 정리
+    EVP_CIPHER_CTX_free(ctx);
+
+    return plainText;
+}
+
+#if 0
 std::string aes256cbc_decrypt(const std::string& cipherText, const std::string& key, const std::string& iv)
 {
     std::string decryptedText;
@@ -70,6 +203,7 @@ std::string aes256cbc_decrypt(const std::string& cipherText, const std::string& 
     decryptedText.erase(decryptedText.length() - paddingLength);
     return decryptedText;
 }
+#endif
 
 void save_encrypted_json(const Json::Value& root, const std::string& filename) {
     // JsonCpp의 JValue를 문자열로 변환
