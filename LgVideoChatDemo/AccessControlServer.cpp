@@ -59,38 +59,21 @@ void setMacro(SOCKET __InputSock, TRegistration* regData);
 bool sendCommandOnlyMsg(TSocketManager *smgr, sockaddr_in sockip, int socklen, bool answer);
 bool sendStatusMsg(TSocketManager *smgr, sockaddr_in sockip, int socklen, char* cid, TStatus status);
 int findReceiverIP(char* recID, sockaddr_in* out);
-SSL* ssl;
-SSL_CTX* sslContext;
+//SSL* ssl;
+//SSL_CTX* sslContext;
 
 int verify_callback(int preverify_ok, X509_STORE_CTX* ctx);
 void log_callback(const SSL* ssl, int where, int ret);
+int allowEarlyDataCallback(SSL* ssl, void* arg)
+{
+	return SSL_EARLY_DATA_ACCEPTED;
+}
 
 // start Server
 bool StartACServer(bool &Loopback)
 {
-
 	SSL_library_init();
 	SSL_load_error_strings();
-	sslContext = SSL_CTX_new(SSLv23_server_method());
-	SSL_CTX_set_verify(sslContext, SSL_VERIFY_PEER, verify_callback);
-	SSL_CTX_set_info_callback(sslContext, log_callback);
-	if (sslContext == NULL)
-	{
-		fprintf(stderr, "Failed to create SSL context.\n");
-		return 1;
-	}
-
-	if (SSL_CTX_use_certificate_file(sslContext, "server.crt", SSL_FILETYPE_PEM) != 1)
-	{
-		fprintf(stderr, "Failed to load server certificate.\n");
-		return 1;
-	}
-	if (SSL_CTX_use_PrivateKey_file(sslContext, "server.key", SSL_FILETYPE_PEM) != 1)
-	{
-		fprintf(stderr, "Failed to load server private key.\n");
-		return 1;
-	}
-	std::cout << "load key done" << std::endl;
 
 	if (hThreadACServer == INVALID_HANDLE_VALUE)
 	{
@@ -348,7 +331,30 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 								return 1;
 							}
 
-							ssl = SSL_new(sslContext);
+							SSL_CTX *sslContext = SSL_CTX_new(SSLv23_server_method());
+							SSL_CTX_set_verify(sslContext, SSL_VERIFY_PEER, verify_callback);
+							SSL_CTX_set_info_callback(sslContext, log_callback);
+							SSL_CTX_set_allow_early_data_cb(sslContext, allowEarlyDataCallback, NULL);
+							if (sslContext == NULL)
+							{
+								fprintf(stderr, "Failed to create SSL context.\n");
+								return 1;
+							}
+
+							if (SSL_CTX_use_certificate_file(sslContext, "server.crt", SSL_FILETYPE_PEM) != 1)
+							{
+								fprintf(stderr, "Failed to load server certificate.\n");
+								return 1;
+							}
+							if (SSL_CTX_use_PrivateKey_file(sslContext, "server.key", SSL_FILETYPE_PEM) != 1)
+							{
+								fprintf(stderr, "Failed to load server private key.\n");
+								return 1;
+							}
+							std::cout << "load key done" << std::endl;
+
+
+							SSL *ssl = SSL_new(sslContext);
 
 							if (ssl == NULL)
 							{
@@ -535,6 +541,22 @@ static int RecvHandler(TSocketManager *smgr, char* data, int datasize, sockaddr_
 		TRegistration* regData = (TRegistration*)data;
 		// Store Data - memory / storage
 		std::cout << "get registration infomation" << std::endl;
+
+		for (TRegistration* user : controlDevices)
+		{
+			TRspResultWithMessage rsp{};
+			rsp.MessageType = RegistrationResponse;
+			if (!strncmp(user->ContactID, regData->ContactID, NAME_BUFSIZE))
+			{
+				memcpy((char *)rsp.Message, "Duplicated ConntactID", strlen("Duplicated ConntactID"));
+				rsp.MessageLen = strlen("Duplicated ConntactID");
+			}
+			if (!strncmp(user->email, regData->email, EMAIL_BUFSIZE))
+			{
+				memcpy((char*)rsp.Message, "Duplicated Email", strlen("Duplicated ConntactID"));
+				rsp.MessageLen = strlen("Duplicated Email");
+			}
+		}
 
 		// macro
 		setMacro(smgr->ASocket, regData);
