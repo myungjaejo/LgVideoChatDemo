@@ -66,7 +66,7 @@ int verify_callback(int preverify_ok, X509_STORE_CTX* ctx);
 void log_callback(const SSL* ssl, int where, int ret);
 int allowEarlyDataCallback(SSL* ssl, void* arg)
 {
-	return SSL_EARLY_DATA_ACCEPTED;
+	return SSL_EARLY_DATA_NOT_SENT;
 }
 
 // start Server
@@ -218,6 +218,38 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 	HANDLE ghEvents[6];			// start , end , popup_list, callReq, getStatus, makeCall 
 	DWORD dwEvent;
 
+	SSL_CTX* sslContext = SSL_CTX_new(TLS_server_method());
+	SSL_CTX_set_verify(sslContext, SSL_VERIFY_PEER, verify_callback);
+	SSL_CTX_set_info_callback(sslContext, log_callback);
+	SSL_CTX_set_allow_early_data_cb(sslContext, allowEarlyDataCallback, NULL);
+	if (sslContext == NULL)
+	{
+		fprintf(stderr, "Failed to create SSL context.\n");
+		return 1;
+	}
+
+	if (SSL_CTX_use_certificate_file(sslContext, "server.crt", SSL_FILETYPE_PEM) != 1)
+	{
+		fprintf(stderr, "Failed to load server certificate.\n");
+		return 1;
+	}
+	if (SSL_CTX_use_PrivateKey_file(sslContext, "server.key", SSL_FILETYPE_PEM) != 1)
+	{
+		fprintf(stderr, "Failed to load server private key.\n");
+		return 1;
+	}
+	std::cout << "load key done" << std::endl;
+
+
+	SSL* ssl = SSL_new(sslContext);
+	SSL_set_allow_early_data_cb(ssl, allowEarlyDataCallback, NULL);
+
+	if (ssl == NULL)
+	{
+		fprintf(stderr, "Failed to create SSL socket.\n");
+		return 1;
+	}
+
 	std::cout << "make ACServer process....." << std::endl;
 	if ((Listener = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET)
 	{
@@ -331,37 +363,6 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 								return 1;
 							}
 
-							SSL_CTX *sslContext = SSL_CTX_new(SSLv23_server_method());
-							SSL_CTX_set_verify(sslContext, SSL_VERIFY_PEER, verify_callback);
-							SSL_CTX_set_info_callback(sslContext, log_callback);
-							SSL_CTX_set_allow_early_data_cb(sslContext, allowEarlyDataCallback, NULL);
-							if (sslContext == NULL)
-							{
-								fprintf(stderr, "Failed to create SSL context.\n");
-								return 1;
-							}
-
-							if (SSL_CTX_use_certificate_file(sslContext, "server.crt", SSL_FILETYPE_PEM) != 1)
-							{
-								fprintf(stderr, "Failed to load server certificate.\n");
-								return 1;
-							}
-							if (SSL_CTX_use_PrivateKey_file(sslContext, "server.key", SSL_FILETYPE_PEM) != 1)
-							{
-								fprintf(stderr, "Failed to load server private key.\n");
-								return 1;
-							}
-							std::cout << "load key done" << std::endl;
-
-
-							SSL *ssl = SSL_new(sslContext);
-
-							if (ssl == NULL)
-							{
-								fprintf(stderr, "Failed to create SSL socket.\n");
-								return 1;
-							}
-
 							if (SSL_set_fd(ssl, tmp.ASocket) != 1)
 							{
 								fprintf(stderr, "Failed to bind SSL socket.\n");
@@ -374,6 +375,8 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 								fprintf(stderr, "Failed to perform SSL handshake.\n");
 								return 1;
 							}
+
+							printf("ssl accept done\n");
 
 							tmp.ssl = ssl;
 

@@ -114,6 +114,9 @@ int verify_callback(int preverify_ok, X509_STORE_CTX* ctx)
     return 1;
 }
 
+int allowEarlyDataCallback(SSL* ssl, void* arg);
+void log_callback(const SSL* ssl, int where, int ret);
+
 bool ConnectToACSever(const char* remotehostname, unsigned short remoteport)
 {
     int iResult;
@@ -139,7 +142,12 @@ bool ConnectToACSever(const char* remotehostname, unsigned short remoteport)
         return 1;
     }
     SSL_CTX_set_verify(sslContext, SSL_VERIFY_PEER, verify_callback);
+    SSL_CTX_set_allow_early_data_cb(sslContext, allowEarlyDataCallback, NULL);
+    //SSL_CTX_set_info_callback(sslContext, log_callback);
+
     Clientssl = SSL_new(sslContext);
+
+    SSL_set_allow_early_data_cb(Clientssl, allowEarlyDataCallback, NULL);
 
     if (Clientssl == NULL) {
         printf("Failed to create SSL.\n");
