@@ -21,6 +21,8 @@
 #include "DisplayImage.h"
 #include "TwoFactorAuth.h"
 #include <openssl/ssl.h>
+#include <schannel.h> 
+#include <mswsock.h>
 
 #pragma comment(lib, "libssl.lib")
 #pragma comment(lib, "libcrypto.lib")
@@ -36,6 +38,8 @@ static DWORD ThreadACClientID;
 static DWORD WINAPI ThreadACClient(LPVOID ivalue);
 static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in sockip, int socklen);
 static int OnConnect(char* IPAddr);
+
+CRITICAL_SECTION ClientSection;
 
 extern HWND hwndCreateRegister, hwndLogin;
 
@@ -71,6 +75,7 @@ static void CleanUpAccessControlClient(void)
 
 bool StartAccessControlClient(void)
 {
+    InitializeCriticalSection(&ClientSection);
     hThreadACClient = CreateThread(NULL, 0, ThreadACClient, NULL, 0, &ThreadACClientID);
     return true;
 }
@@ -132,8 +137,11 @@ bool ConnectToACSever(const char* remotehostname, unsigned short remoteport)
     hints.ai_protocol = IPPROTO_TCP;
 
     // Initialize SSL
-    SSL_library_init();
+    //SSL_library_init();
     SSL_CTX* sslContext = SSL_CTX_new(TLS_client_method());
+
+    //SSL_CTX_set_min_proto_version(sslContext, TLS1_2_VERSION);
+    //SSL_CTX_set_max_proto_version(sslContext, TLS1_2_VERSION);
 
     if (sslContext == NULL) {
         printf("Failed to create SSL context.\n");
@@ -142,12 +150,12 @@ bool ConnectToACSever(const char* remotehostname, unsigned short remoteport)
         return 1;
     }
     SSL_CTX_set_verify(sslContext, SSL_VERIFY_PEER, verify_callback);
-    SSL_CTX_set_allow_early_data_cb(sslContext, allowEarlyDataCallback, NULL);
-    //SSL_CTX_set_info_callback(sslContext, log_callback);
+    //SSL_CTX_set_allow_early_data_cb(sslContext, allowEarlyDataCallback, NULL);
+    SSL_CTX_set_info_callback(sslContext, log_callback);
 
     Clientssl = SSL_new(sslContext);
 
-    SSL_set_allow_early_data_cb(Clientssl, allowEarlyDataCallback, NULL);
+    //SSL_set_allow_early_data_cb(Clientssl, allowEarlyDataCallback, NULL);
 
     if (Clientssl == NULL) {
         printf("Failed to create SSL.\n");
@@ -168,13 +176,25 @@ bool ConnectToACSever(const char* remotehostname, unsigned short remoteport)
         return false;
     }
 
-    if ((Client = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == INVALID_SOCKET)
+    if ((Client = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET)
     {
         freeaddrinfo(result);
         std::cout << "video client socket() failed with error " << WSAGetLastError() << std::endl;
         return false;
     }
+#if 0
+    // TLS 1.2로 프로토콜 버전 설정
+    DWORD secureProtocol = SP_PROT_TLS1_2;
 
+    // 소켓에 TLS 1.2 프로토콜 설정
+    if (setsockopt(Client, SOL_SOCKET, SO_SECURE_PROTOCOL_INFO, (const char*)&secureProtocol, sizeof(secureProtocol)) == SOCKET_ERROR)
+    {
+        // 설정 실패 처리
+        closesocket(Client);
+        WSACleanup();
+        return 1;
+    }
+#endif
     //----------------------
     // Connect to server.
     iResult = connect(Client, result->ai_addr, (int)result->ai_addrlen);
@@ -190,15 +210,24 @@ bool ConnectToACSever(const char* remotehostname, unsigned short remoteport)
     
     SSL_set_fd(Clientssl, Client);
 
+    Sleep(1000);
+
     // Perform SSL handshake
+#if 0
+    char earlyDataBuffer[1024] = "Hello";
+    size_t size;
+    int earlyDataBytesRead = SSL_write_early_data(Clientssl, earlyDataBuffer, sizeof(earlyDataBuffer) - 1, &size);
+#endif
 
     if (SSL_connect(Clientssl) != 1) {
         printf("SSL handshake failed.\n");
+#if 0
         SSL_free(Clientssl);
         closesocket(Client);
         SSL_CTX_free(sslContext);
         WSACleanup();
-        return 1;
+        //return 1;
+#endif
     }
 
     return true;
