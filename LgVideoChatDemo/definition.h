@@ -23,6 +23,8 @@
 #define TWOFACTOR_BUFSIZE	256
 #define MAX_DEVSIZE			5
 
+#define MAX_ALLOW_LOGIN_ATTEMPT 3
+
 typedef struct oRegistration {
 	unsigned char MessageType;
 	unsigned int EmailSize;
@@ -37,6 +39,7 @@ typedef struct oRegistration {
 	char MissedCallTime[PARSE_NAME_BUFSIZE];
 	char LastIPAddress[IP_BUFFSIZE];
 	char LastRegistTime[TIME_STRSIZE];
+	char LoginAttempt;
 }TRegistration;
 
 typedef struct oLogin {
@@ -91,12 +94,43 @@ typedef struct oCommandOnly {
 	bool answer;
 }TCommandOnly;
 
+typedef struct oMissedCall {
+	unsigned char MessageType;
+	unsigned int ListSize;
+	char ListBuf[MAX_DEVSIZE][NAME_BUFSIZE];
+}TMissedCall;
+
 // can be used simple response
 typedef struct oRspWithMessage {
 	unsigned char MessageType;
 	unsigned char MessageLen;
 	unsigned char Message[GENERAL_BUFSIZE];
 }TRspWithMessage;
+
+typedef struct oRspWithMessage2 {
+	unsigned char MessageType;
+	unsigned char MessageLen1;
+	unsigned char Message1[GENERAL_BUFSIZE];
+	unsigned char MessageLen2;
+	unsigned char Message2[GENERAL_BUFSIZE];
+}TRspWithMessage2;
+
+typedef struct oRspResultWithMessage {
+	unsigned char MessageType;
+	int result;
+	unsigned char MessageLen;
+	unsigned char Message[GENERAL_BUFSIZE];
+}TRspResultWithMessage;
+
+typedef struct oRep {
+	unsigned char MessageType;
+}TReq;
+
+typedef struct oRepwithMessage {
+	unsigned char MessageType;
+	unsigned char MessageLen;
+	unsigned char Message[GENERAL_BUFSIZE];
+}TReqwithMessage;
 
 
 typedef enum {
@@ -113,6 +147,7 @@ typedef enum {
 	RequestCall,
 	AcceptCall,
 	RejectCall,
+	MissedCall,
 	ResetPasswordRequest,
 	ResetPasswordResponse,
 	ChangePasswordRequest,

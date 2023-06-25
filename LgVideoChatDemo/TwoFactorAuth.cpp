@@ -10,6 +10,7 @@
 #include <wininet.h>
 #include <stdio.h>
 #include "TwoFactorAuth.h"
+#include "Logger.h"
 
 #pragma comment(lib, "wininet.lib")
 
@@ -101,9 +102,11 @@ void TFAProcess(const char* reciver)
     command += std::string(admin_passwd);
     command += "' -AsPlainText -Force))\"";
 
-    //std::cout << command.c_str() << std::endl;
-
-    system(command.c_str());
+    int ret = system(command.c_str());
+    if (ret)
+        LOG("failed to send TFA");
+    else
+        LOG("succeded to send TFA");
 }
 
 void SendTFA(char* reciver)

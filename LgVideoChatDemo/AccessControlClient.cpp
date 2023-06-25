@@ -1,4 +1,3 @@
-//#include "definition.h"
 #include <winsock2.h>
 #include <windows.h>
 #include <stdio.h>
@@ -11,6 +10,7 @@
 #include "AccessControlClient.h"
 #include "LgVideoChatDemo.h"
 #include "TcpSendRecv.h"
+#include "definition.h"
 #include "ContactList.h"
 #include "NotifyCall.h"
 #include "VideoClient.h"
@@ -19,6 +19,11 @@
 #include "Camera.h"
 #include "DisplayImage.h"
 #include "TwoFactorAuth.h"
+#include <openssl/ssl.h>
+
+#pragma comment(lib, "libssl.lib")
+#pragma comment(lib, "libcrypto.lib")
+
 
 static HANDLE hClientEvent = INVALID_HANDLE_VALUE;
 static HANDLE hEndACClientEvent = INVALID_HANDLE_VALUE;
@@ -31,6 +36,9 @@ static DWORD ThreadACClientID;
 static DWORD WINAPI ThreadACClient(LPVOID ivalue);
 static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in sockip, int socklen);
 static int OnConnect(char* IPAddr);
+
+extern HWND hwndCreateRegister, hwndLogin;
+SSL* Clientssl;
 
 static void AccessControlClientSetExitEvent(void)
 {
@@ -87,6 +95,22 @@ bool IsACClientRunning(void)
     else return true;
 }
 
+int verify_callback(int preverify_ok, X509_STORE_CTX* ctx)
+{
+    if (preverify_ok == 0)
+    {
+        int depth = X509_STORE_CTX_get_error_depth(ctx);
+        int err = X509_STORE_CTX_get_error(ctx);
+
+        if (depth == 0 && err == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT)
+        {
+            return 1;
+        }
+        return 0;
+    }
+    return 1;
+}
+
 bool ConnectToACSever(const char* remotehostname, unsigned short remoteport)
 {
     int iResult;
@@ -97,9 +121,29 @@ bool ConnectToACSever(const char* remotehostname, unsigned short remoteport)
     sprintf_s(remoteportno, sizeof(remoteportno), "%d", remoteport);
 
     memset(&hints, 0, sizeof(struct addrinfo));
-    hints.ai_family = AF_UNSPEC;
+    hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
+
+    // Initialize SSL
+    SSL_library_init();
+    SSL_CTX* sslContext = SSL_CTX_new(TLS_client_method());
+
+    if (sslContext == NULL) {
+        printf("Failed to create SSL context.\n");
+        closesocket(Client);
+        WSACleanup();
+        return 1;
+    }
+    SSL_CTX_set_verify(sslContext, SSL_VERIFY_PEER, verify_callback);
+    Clientssl = SSL_new(sslContext);
+
+    if (Clientssl == NULL) {
+        printf("Failed to create SSL.\n");
+        closesocket(Client);
+        WSACleanup();
+        return 1;
+    }
 
     iResult = getaddrinfo(remotehostname, remoteportno, &hints, &result);
     if (iResult != 0)
@@ -132,6 +176,19 @@ bool ConnectToACSever(const char* remotehostname, unsigned short remoteport)
             std::cout << "closesocket function failed with error :" << WSAGetLastError() << std::endl;
         return false;
     }
+
+    SSL_set_fd(Clientssl, Client);
+
+    // Perform SSL handshake
+    if (SSL_connect(Clientssl) != 1) {
+        printf("SSL handshake failed.\n");
+        SSL_free(Clientssl);
+        closesocket(Client);
+        SSL_CTX_free(sslContext);
+        WSACleanup();
+        return 1;
+    }
+
     return true;
 
 }
@@ -222,14 +279,16 @@ static DWORD WINAPI ThreadACClient(LPVOID ivalue)
                     else
                     {
                         int iResult;
-                        sockaddr_in safrom;
+                        sockaddr_in safrom{};
                         int socklen = sizeof(sockaddr_in);
+                        size_t len;
 
-                        iResult = recvfrom(Client, (char*)InputBufferWithOffset, InputBytesNeeded, 0, (sockaddr*)&safrom, &socklen);
+                        //iResult = recvfrom(Client, (char*)InputBufferWithOffset, InputBytesNeeded, 0, (sockaddr*)&safrom, &socklen);
+                        iResult = SSL_read_ex(Clientssl, InputBufferWithOffset, InputBytesNeeded, &len);
                         if (iResult != SOCKET_ERROR)
                         {
                             //std::cout << "AC client recevied : " << InputBufferWithOffset << std::endl;
-                            RecvHandler(Client, InputBufferWithOffset, iResult, safrom, socklen);
+                            RecvHandler(Client, InputBufferWithOffset, len, safrom, socklen);
                         }
                         else 
                             std::cout << "ReadDataTcpNoBlock buff failed " << WSAGetLastError() << std::endl;
@@ -293,7 +352,9 @@ static DWORD WINAPI ThreadACClient(LPVOID ivalue)
 
 int sendMsgtoACS(char* data, int len)
 {
-    return send(Client, data, len, 0);
+    size_t sent;
+    SSL_write_ex(Clientssl, data, len, &sent);
+    return sent;
 }
 
 
@@ -314,6 +375,7 @@ int OnConnectACS(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         else
         {
             std::cout << "Connection AC server Failed!" << std::endl;
+            MessageBox(hWnd, TEXT("Connection AC server Failed!"), TEXT("ERROR"), MB_OK | MB_ICONEXCLAMATION);
             return 0;
         }
 
@@ -349,7 +411,13 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
     {
         // Registration
         std::cout << "registed User Information " << std::endl;
-
+        if (getMsg->answer) {
+            SendMessage(hwndCreateRegister, WM_DESTROY, 0, 0);
+            MessageBox(NULL, L"Registered Successfully", L"", MB_OK);
+        }
+        else {
+            MessageBox(NULL, L"Registration Failed", L"", MB_OK);
+        }
         break;
     }
     case LoginResponse:
@@ -412,6 +480,7 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
                 msg->MessageType = RequestContactList;
                 msg->answer = true;
                 sendMsgtoACS((char*)msg, sizeof(TCommandOnly));
+                free(msg);
             }
         }
         else
@@ -510,6 +579,17 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
     {
         //TDeviceID* tmp = (TDeviceID*)data;
         devStatus = Connected;
+        break;
+    }
+    case MissedCall:
+    {
+        TMissedCall* req = (TMissedCall*)data;
+
+        // need to discuss missed call structure
+        for (int i = 0; i < MAX_DEVSIZE; i++) {
+            printf("%s\n", req->ListBuf[i]);
+        }
+
         break;
     }
     default:

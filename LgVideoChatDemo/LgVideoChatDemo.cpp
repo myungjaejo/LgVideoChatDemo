@@ -28,12 +28,13 @@
 #include "TwoFactorAuthModule.h"
 #include "ForgetPassword.h"
 #include "ChangePassword.h"
+#include "Logger.h"
 
 #pragma comment(lib,"comctl32.lib")
 #ifdef _DEBUG
-#pragma comment(lib,"..\\..\\opencv\\build\\x64\\vc16\\lib\\opencv_world470d.lib")
+#pragma comment(lib,"opencv_world470d.lib")
 #else
-#pragma comment(lib,"..\\..\\opencv\\build\\x64\\vc16\\lib\\opencv_world470.lib")
+#pragma comment(lib,"opencv_world470.lib")
 #endif
 #pragma comment(lib, "IPHLPAPI.lib")
 #pragma comment(lib, "ws2_32.lib")
@@ -105,21 +106,22 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     WSADATA wsaData;
     HRESULT hr;
 
+    InitLogger(NULL);
     SetStdOutToNewConsole();
 
     int res = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (res != NO_ERROR) {
-        std::cout << "WSAStartup failed with error " << res << std::endl;
+        LOGF("%s %d", "WSAStartup failed with error ", res);
         return 1;
     }
     SetHostAddr();
     hr = CoCreateGuid(&InstanceGuid);
     if (hr != S_OK)
     {
-        std::cout << "GUID Create Failure " << std::endl;
+        LOG("GUID Create Failure ");
         return 1;
     }
-    printf("Guid = {%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}\n",
+    LOGF("Guid = {%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}\n",
         InstanceGuid.Data1, InstanceGuid.Data2, InstanceGuid.Data3,
         InstanceGuid.Data4[0], InstanceGuid.Data4[1], InstanceGuid.Data4[2], InstanceGuid.Data4[3],
         InstanceGuid.Data4[4], InstanceGuid.Data4[5], InstanceGuid.Data4[6], InstanceGuid.Data4[7]);
@@ -132,7 +134,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     if (!OnlyOneInstance())
     {
-        std::cout << "Another Instance Running " << std::endl;
+        LOG("Another Instance Running ");
         return 1;
     }
 
@@ -674,11 +676,11 @@ static int OnConnect(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             if (ConnectToSever(IPAddr, VIDEO_PORT))
             {
-                std::cout << "Connected to Server" << std::endl;
+                LOG("Connected to Server");
                 StartVideoClient();
-                std::cout << "Video Client Started.." << std::endl;
+                LOG("Video Client Started..");
                 VoipVoiceStart(IPAddr, VOIP_LOCAL_PORT, VOIP_REMOTE_PORT, VoipAttr);
-                std::cout << "Voip Voice Started.." << std::endl;
+                LOG("Voip Voice Started..");
                 return 1;
             }
             else
@@ -690,7 +692,7 @@ static int OnConnect(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
         else 
           {
-            std::cout << "Open Camera Failed" << std::endl;
+            LOG("Open Camera Failed");
             return 0;
           }
     }
@@ -703,7 +705,7 @@ static int OnDisconnect(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         StopVideoClient();
         CloseCamera();
-        std::cout << "Video Client Stopped" << std::endl;
+        LOG("Video Client Stopped");
     }
     return 1;
 }

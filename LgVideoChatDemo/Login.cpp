@@ -11,6 +11,10 @@
 #include "AccessControlServer.h"
 #include "ContactList.h"
 #include "ForgetPassword.h"
+#include "include\openssl\sha.h"
+#include "include\openssl\bio.h"
+#include "include\openssl\evp.h"
+#pragma comment(lib, "..\\built-libs\\libcrypto.lib")
 
 #define BUTTON_LOGIN 300
 #define BUTTON_REGISTER 301
@@ -24,6 +28,7 @@ HWND hwndParent;
 bool IsLogin = false;
 
 extern HINSTANCE hInst;
+extern void CreateForgetPasswd(HWND phwnd);
 
 bool isAdmin(const TCHAR* Email, const TCHAR* Passwd)
 {
@@ -60,31 +65,36 @@ bool HasConsecutiveCharacters(const TCHAR* password) {
     return false;
 }
 
-bool ValidateEmailAddress(const TCHAR* email) {
+bool ValidateEmailAddress(const TCHAR* email) 
+{
     std::basic_regex<TCHAR> pattern(_T(R"([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})"));
 
     std::basic_string<TCHAR> emailString(email);
     return std::regex_match(emailString, pattern);
 }
 
-void SHA256Hash(const TCHAR* input, size_t inputLength, char* output) {
+void SHA256Hash(const char* input, size_t inputLength, char* output) 
+{
     HCRYPTPROV hProv = 0;
     HCRYPTHASH hHash = 0;
     BYTE hash[32];
     DWORD hashLen = sizeof(hash);
 
-    if (!CryptAcquireContext(&hProv, nullptr, nullptr, PROV_RSA_AES, CRYPT_VERIFYCONTEXT)) {
+    if (!CryptAcquireContext(&hProv, nullptr, nullptr, PROV_RSA_AES, CRYPT_VERIFYCONTEXT)) 
+    {
         std::cerr << "CryptAcquireContext Failed: " << GetLastError() << std::endl;
         return;
     }
 
-    if (!CryptCreateHash(hProv, CALG_SHA_256, 0, 0, &hHash)) {
+    if (!CryptCreateHash(hProv, CALG_SHA_256, 0, 0, &hHash)) 
+    {
         std::cerr << "CryptCreateHash Failed: " << GetLastError() << std::endl;
         CryptReleaseContext(hProv, 0);
         return;
     }
 
-    if (!CryptHashData(hHash, reinterpret_cast<const BYTE*>(input), static_cast<DWORD>(inputLength), 0)) {
+    if (!CryptHashData(hHash, reinterpret_cast<const BYTE*>(input), static_cast<DWORD>(inputLength), 0)) 
+    {
         std::cerr << "CryptHashData Failed: " << GetLastError() << std::endl;
         CryptDestroyHash(hHash);
         CryptReleaseContext(hProv, 0);
@@ -158,9 +168,14 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                         return 1;
                     }
 
-                    char PasswdHash[65];
+                    char PasswdChar[GENERAL_BUFSIZE] = { 0, };
+                    size_t len = _tcslen(Passwd);
 
-                    SHA256Hash(Passwd, _tcslen(Passwd), PasswdHash);
+                    CopyTCharToChar(Passwd, PasswdChar, len);
+
+                    char PasswdHash[65] = { 0, };
+                    //SHA256Hash(Passwd, len, PasswdHash);
+                    SHA256Hash((const char*)PasswdChar, len, PasswdHash);
                     std::cout << "SHA-256 : " << PasswdHash << std::endl;
 
                     TLogin login{};
@@ -221,7 +236,7 @@ void LoginCreateForm(HWND parentHwnd)
     wc.lpszClassName = L"LoginWindowClass";
     RegisterClass(&wc);
 
-    HWND hwnd = CreateWindowEx(
+    hwndLogin = CreateWindowEx(
         0,
         L"LoginWindowClass",
         L"Login",
@@ -236,7 +251,7 @@ void LoginCreateForm(HWND parentHwnd)
         L"Email",
         WS_VISIBLE | WS_CHILD,
         20, 20, 90, 20,
-        hwnd, NULL, NULL, NULL
+        hwndLogin, NULL, NULL, NULL
     );
 
     hwndEmail = CreateWindowEx(
@@ -245,7 +260,7 @@ void LoginCreateForm(HWND parentHwnd)
         L"",
         WS_VISIBLE | WS_CHILD | ES_AUTOHSCROLL,
         100, 20, 220, 20,
-        hwnd, NULL, NULL, NULL
+        hwndLogin, NULL, NULL, NULL
     );
 
     HWND hwndPasswordLabel = CreateWindowEx(
@@ -254,7 +269,7 @@ void LoginCreateForm(HWND parentHwnd)
         L"Password",
         WS_VISIBLE | WS_CHILD,
         20, 50, 90, 20,
-        hwnd, NULL, NULL, NULL
+        hwndLogin, NULL, NULL, NULL
     );
 
     hwndPassword = CreateWindowEx(
@@ -263,15 +278,15 @@ void LoginCreateForm(HWND parentHwnd)
         L"",
         WS_VISIBLE | WS_CHILD | ES_AUTOHSCROLL | ES_PASSWORD,
         100, 50, 220, 20,
-        hwnd, NULL, NULL, NULL
+        hwndLogin, NULL, NULL, NULL
     );
-    hwndLogin = CreateWindowEx(
+    HWND hwndLoginButton = CreateWindowEx(
         0,
         L"BUTTON",
         L"Login",
         WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
         20, 80, 300, 30,
-        hwnd, (HMENU)BUTTON_LOGIN, NULL, NULL
+        hwndLogin, (HMENU)BUTTON_LOGIN, NULL, NULL
     );
 
     hwndRegister = CreateWindowEx(
@@ -280,7 +295,7 @@ void LoginCreateForm(HWND parentHwnd)
         L"Register",
         WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
         20, 120, 145, 30,
-        hwnd, (HMENU)BUTTON_REGISTER, NULL, NULL
+        hwndLogin, (HMENU)BUTTON_REGISTER, NULL, NULL
     );
 
     hwndForgetPasswd = CreateWindowEx(
@@ -289,10 +304,10 @@ void LoginCreateForm(HWND parentHwnd)
         L"Forget Passwd",
         WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
         175, 120, 145, 30,
-        hwnd, (HMENU)BUTTON_FORGETPASSWD, NULL, NULL
+        hwndLogin, (HMENU)BUTTON_FORGETPASSWD, NULL, NULL
     );
 
     // Show the main window
-    ShowWindow(hwnd, SW_SHOWDEFAULT);
-    UpdateWindow(hwnd);
+    ShowWindow(hwndLogin, SW_SHOWDEFAULT);
+    UpdateWindow(hwndLogin);
 }

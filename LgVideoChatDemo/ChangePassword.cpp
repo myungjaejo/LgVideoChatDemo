@@ -7,7 +7,8 @@
 #include "AccessControlClient.h"
 #include "LgVideoChatDemo.h"
 
-extern void SHA256Hash(const TCHAR* input, size_t inputLength, char* output);
+void SHA256Hash(const char* input, size_t inputLength, char* output);
+void CopyTCharToChar(TCHAR* tcharString, char* CharString, int length);
 
 #define BUTTON_JOINUS 400
 const int maxLength = 255;
@@ -17,16 +18,7 @@ HWND hwndReRegisterPassword, hwndReRegisterConfirmPassword, hwndReJoinUs;
 bool checkPasswordRuleR(HWND hwnd, TCHAR* Passwd, unsigned int maxLength);
 bool checkConfirmPasswdR(HWND hwnd, const TCHAR* passwd, size_t passwdSize, TCHAR* confirmPasswd, size_t confirmPasswdSize);
 
-//int exchangeTCHARToChar(TCHAR* target, char* outbuf)
-//{
-//    int nLength = WideCharToMultiByte(CP_ACP, 0, target, -1, NULL, 0, NULL, NULL);
-//    WideCharToMultiByte(CP_ACP, 0, target, -1, outbuf, nLength, NULL, NULL);
-//
-//    return nLength;
-//}
-
-
-bool checkEmptyFieldR(HWND hwnd, const TCHAR* itemName, TCHAR* itemData, size_t itemDataSize)
+  bool checkEmptyFieldR(HWND hwnd, const TCHAR* itemName, TCHAR* itemData, size_t itemDataSize)
 {
     if (_tcsncmp(itemData, TEXT(""), itemDataSize) == 0)
     {
@@ -77,9 +69,13 @@ LRESULT CALLBACK ReRegisterProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
                 strcpy_s(msg->email, MyID);
                 memset(msg->password, 0, 256);
 
-                char PasswdHash[65];
+                char PasswdChar[GENERAL_BUFSIZE] = { 0, };
+                char PasswdHash[65] = { 0, };
 
-                SHA256Hash(Passwd, _tcslen(Passwd), PasswdHash);
+                int len = _tcslen(Passwd);
+                CopyTCharToChar(Passwd, PasswdChar, len);
+
+                SHA256Hash(PasswdChar, _tcslen(Passwd), PasswdHash);
                 std::cout << "SHA-256 : " << PasswdHash << std::endl;
 
                 msg->PasswordSize = 64;
