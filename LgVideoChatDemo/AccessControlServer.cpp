@@ -549,10 +549,10 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 	return 0;
 }
 
-void ResetAttempt(LPVOID lpArgToCompletionRoutine, DWORD dwTimerLowValue, DWORD dwTimerHighValue)
+VOID CALLBACK ResetLoginAttempt(PVOID lpParameter, BOOLEAN TimerOrWaitFired)
 {
 	printf("reset attempt count\n");
-	TRegistration* user = (TRegistration*)lpArgToCompletionRoutine;
+	TRegistration* user = (TRegistration*)lpParameter;
 	user->LoginAttempt = 0;
 }
 
@@ -579,11 +579,13 @@ static int RecvHandler(TSocketManager *smgr, char* data, int datasize, sockaddr_
 			{
 				memcpy((char *)rsp.Message, "Duplicated ConntactID", strlen("Duplicated ConntactID"));
 				rsp.MessageLen = strlen("Duplicated ConntactID");
+				return SSL_write(smgr->ssl, &rsp, sizeof(rsp));
 			}
 			if (!strncmp(user->email, regData->email, EMAIL_BUFSIZE))
 			{
 				memcpy((char*)rsp.Message, "Duplicated Email", strlen("Duplicated ConntactID"));
 				rsp.MessageLen = strlen("Duplicated Email");
+				return SSL_write(smgr->ssl, &rsp, sizeof(rsp));
 			}
 		}
 
@@ -661,17 +663,20 @@ static int RecvHandler(TSocketManager *smgr, char* data, int datasize, sockaddr_
 					if ((*iter)->LoginAttempt > MAX_ALLOW_LOGIN_ATTEMPT)
 					{
 						std::cout << "Login restricted - Too Many Login attempt" << std::endl;
-						HANDLE hTimer = CreateWaitableTimer(NULL, FALSE, NULL);
+						HANDLE hTimer = NULL;
+						HANDLE hTimerQueue = CreateTimerQueue();
 
-						if (!hTimer) {
-							printf("hTimer is null\n");
+						if (!hTimerQueue) {
+							printf("hTimerQueue is null\n");
 							break;
 						}
 
-						LARGE_INTEGER dueTime;
-						dueTime.QuadPart = -10000000000;
-						SetWaitableTimer(hTimer, &dueTime, 0, ResetAttempt, (LPVOID)(*iter), FALSE);
-						DWORD result = WaitForSingleObject(hTimer, INFINITE);
+						//if (!CreateTimerQueueTimer(&hTimer, hTimerQueue, ResetLoginAttempt, user, 3600000, 0, 0)) {
+						if (!CreateTimerQueueTimer(&hTimer, hTimerQueue, ResetLoginAttempt, (*iter), 10000, 0, 0)) {
+							printf("hTimerQueue is null\n");
+							break;
+						}
+
 						break;
 					}
 				}
