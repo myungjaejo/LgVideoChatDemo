@@ -3,7 +3,8 @@
 #include <iostream>
 #include <random>
 #include <vector>
-
+#include <tuple>
+#include <algorithm>
 #include <cstring>
 
 #include <windows.h>
@@ -26,6 +27,7 @@ ch::time_point<ch::high_resolution_clock> end;
 
 const char* admin_id = " lgss23.team2";
 const char* admin_passwd = "bbmugvpajgoanzbu";
+static std::vector<std::pair<std::string, std::string>> tokenMng;
 
 
 void MakeRandomToken()
@@ -40,28 +42,37 @@ void MakeRandomToken()
     //std::cout << random_token << std::endl;
 }
 
-int CheckToken(char* input_token, int sec)
+int CheckToken(char* receiver, char* input_token, int sec)
 {
-    std::cout << "Token : " << random_token << " Recv : " << input_token << std::endl;
-    if (sec >= 0 && sec <= 120)
+    
+    for (auto iter = tokenMng.begin(); iter != tokenMng.end(); iter++)
     {
-        if (!strcmp(random_token, input_token))
+        if (!strcmp(((*iter).first).c_str(), receiver))
         {
-            return TFA_SUCCESS;
-        }
-        else
-        {
-            return TFA_FAIL_WRONG;
+            std::cout << "Token : " << ((*iter).second).c_str() << " Recv : " << input_token << std::endl;
+            if (sec >= 0 && sec <= 120)
+            {
+                if (!strcmp(((*iter).second).c_str(), input_token))
+                {
+                    tokenMng.erase(iter);
+                    return TFA_SUCCESS;
+                }
+                else
+                {
+                    return TFA_FAIL_WRONG;
+                }
+            }
+            else
+            {
+                std::cout << "Timeout!!!!!!!! " << std::endl;
+                return TFA_FAIL_TIME_OUT;
+            }
         }
     }
-    else
-    {
-        std::cout << "Timeout!!!!!!!! "<< std::endl;
-        return TFA_FAIL_TIME_OUT;
-    }
+    return TFA_FAIL_WRONG;    
 }
 
-void TFAProcess(const char* reciver)
+void TFAProcess(const char* receiver)
 {
     
     const char* smtp_server = "smtp.gmail.com";
@@ -89,7 +100,7 @@ void TFAProcess(const char* reciver)
 
     //std::string command = "powershell.exe -ExecutionPolicy Bypass -Command \"Send-MailMessage -To '" + std::string(reciver) + "' -From '" + admin_id + "@gmail.com' -Subject 'Two-factor authentication' -Body 'Token : " + body_tokne + "' -SmtpServer '" + smtp_server + "' -Port 587 -UseSsl -Credential (New-Object System.Management.Automation.PSCredential -ArgumentList '" + admin_id + "@gmail.com', (ConvertTo-SecureString -String '" + admin_passwd + "' - AsPlainText - Force))" + "\"";
     std::string command = "powershell.exe -ExecutionPolicy Bypass -Command \"Send-MailMessage -To '";
-    command += std::string(reciver);
+    command += std::string(receiver);
     command += "' -From '";
     command += std::string(admin_id);
     command += "@gmail.com' -Subject 'Two-factor authentication' -Body 'Token : ";
@@ -106,7 +117,11 @@ void TFAProcess(const char* reciver)
     if (ret)
         LOG("failed to send TFA");
     else
+    {
         LOG("succeded to send TFA");
+        auto input = std::make_pair(std::string(receiver), std::string(random_token));
+        tokenMng.push_back(input);
+    }
 }
 
 void SendTFA(char* reciver)
@@ -117,13 +132,13 @@ void SendTFA(char* reciver)
     start = ch::high_resolution_clock::now();
 }
 
-int ReadTFA(char* input_token)
+int ReadTFA(char* receiver, char* input_token)
 {
     int sec;
     int status = 0;
     ch::time_point<ch::high_resolution_clock> end = ch::high_resolution_clock::now();
     auto diff = end - start;
     sec = ch::duration_cast<ch::seconds>(diff).count();
-    status = CheckToken(input_token, sec);
+    status = CheckToken(receiver,input_token, sec);
     return status;
 }
