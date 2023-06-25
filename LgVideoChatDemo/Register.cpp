@@ -80,6 +80,7 @@ LRESULT CALLBACK RegisterProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
                 // printf("ID : %ls\nPASSWD : %ls\nConfirmPasswd : %ls\nFirstName : %ls\nLastName : %ls\nAddress : %ls\n", Email, Passwd, ConfirmPasswd, FirstName, LastName, Address);
                 TRegistration* msg = (TRegistration *)std::malloc(sizeof(TRegistration));
+                memset(msg, 0, sizeof(msg));
                 if (msg != NULL)
                 {
                     msg->MessageType = Registration;

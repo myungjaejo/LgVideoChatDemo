@@ -19,6 +19,7 @@
 #include "VideoServer.h"
 #include "TwoFactorAuth.h"
 #include "Logger.h"
+#include "TimeUtil.h"
 
 #pragma comment(lib, "libssl.lib")
 #pragma comment(lib, "libcrypto.lib")
@@ -482,13 +483,13 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 					}
 					else
 					{
-						char testText[4096] = {0,};
+						char testText[8192] = {0,};
 						int result = 0;
 						sockaddr_in saFrom{};
 						int nFromLen = sizeof(sockaddr_in);
 						size_t recieved;
 
-						if (SSL_read_ex(sockmng[dwEvent - 2].ssl, testText, sizeof(testText), &recieved) > 0)
+						if (SSL_read_ex(sockmng[dwEvent - 2].ssl, testText, sizeof(testText) - 1, &recieved) > 0)
 						{
 							//std::cout << "Received : " << testText << std::endl;
 							RecvHandler(&sockmng[dwEvent - 2], testText, recieved, saFrom, nFromLen);
@@ -575,6 +576,7 @@ static int RecvHandler(TSocketManager *smgr, char* data, int datasize, sockaddr_
 		{
 			TRspResultWithMessage rsp{};
 			rsp.MessageType = RegistrationResponse;
+			rsp.answer = false;
 			if (!strncmp(user->ContactID, regData->ContactID, NAME_BUFSIZE))
 			{
 				memcpy((char *)rsp.Message, "Duplicated ConntactID", strlen("Duplicated ConntactID"));
@@ -591,6 +593,8 @@ static int RecvHandler(TSocketManager *smgr, char* data, int datasize, sockaddr_
 
 		// macro
 		setMacro(smgr->ASocket, regData);
+
+		GetCurrentDateTime(regData->LastPasswordChange, sizeof(regData->LastPasswordChange));
 
 		if (RegistrationUserData(regData))
 		{
@@ -711,6 +715,19 @@ static int RecvHandler(TSocketManager *smgr, char* data, int datasize, sockaddr_
 					{
 						if (!strcmp((*iter)->ContactID, myCID))
 						{
+							SYSTEMTIME CurTime, LastPasswordChangedTime;
+							GetLocalTime(&CurTime);
+							ConvertDateTime((*iter)->LastPasswordChange, &LastPasswordChangedTime);
+
+							if (IsTimeDifferenceGreaterThanOneMonth(CurTime, LastPasswordChangedTime))
+							{
+								TRspWithMessage rsp{};
+								rsp.MessageType = LoginResponse;
+								rsp.MessageLen = strlen("Password need to be updated. it changed one month ago.");
+								memcpy(rsp.Message, "Password need to be updated. it changed one month ago.", strlen("Password need to be updated.it changed one month ago."));
+								return SSL_write(smgr->ssl, &rsp, sizeof(rsp));
+							}
+
 							strcpy_s((*iitt).Owner, myCID);
 							strcpy_s((*iter)->LastIPAddress, (*iitt).IPAddr);
 							std::cout << "Login Information : " << (*iter)->email << " / " << myCID << " / " << (*iitt).IPAddr << std::endl;
@@ -968,9 +985,12 @@ static int RecvHandler(TSocketManager *smgr, char* data, int datasize, sockaddr_
 			{
 				std::cout << "Re-Registration Password to " << (*iter)->email << std::endl;
 				memcpy((*iter)->password, msg->password, msg->PasswordSize);
+				GetCurrentDateTime((*iter)->LastPasswordChange, sizeof((*iter)->LastPasswordChange));
 				break;
 			}
 		}
+		// ? update
+		RegistrationToFile();
 
 		TStatusInfo* feedback = (TStatusInfo*)std::malloc(sizeof(TStatusInfo));
 

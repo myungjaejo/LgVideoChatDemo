@@ -417,10 +417,20 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
 
         if (getMsg->answer) {
             SendMessage(hwndCreateRegister, WM_DESTROY, 0, 0);
+            SendMessage(hwndLogin, WM_DESTROY, 0, 0);
             MessageBox(NULL, L"Registered Successfully", L"", MB_OK);
         }
         else {
-            MessageBox(NULL, L"Registration Failed", L"", MB_OK);
+            TRspResultWithMessage* rsp = (TRspResultWithMessage*)data;
+
+            LPCWSTR lpcwstr;
+
+            int size = MultiByteToWideChar(CP_UTF8, 0, (LPCCH)rsp->Message, -1, NULL, 0);
+            wchar_t* wbuffer = new wchar_t[size];
+            MultiByteToWideChar(CP_UTF8, 0, (LPCCH)rsp->Message, -1, wbuffer, size);
+            lpcwstr = wbuffer;
+
+            MessageBox(NULL, lpcwstr, L"", MB_OK);
         }
 
         break;
@@ -460,7 +470,18 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
             //PostMessage(hWndMain, WM_COMMAND, (WPARAM)IDM_LOGOUT, 0);
             PostMessage(hwndLogin, WM_DESTROY, 0, 0);
             std::cout << "Lonin Failed " << std::endl;
-            MessageBox(NULL, L"Login Failed", L"", MB_OK);
+            //MessageBox(NULL, L"Login Failed", L"", MB_OK);
+            TRspWithMessage *rsp = (TRspWithMessage * )data;
+
+            LPCWSTR lpcwstr;
+
+
+            int size = MultiByteToWideChar(CP_UTF8, 0, (LPCCH)rsp->Message, -1, NULL, 0);
+            wchar_t* wbuffer = new wchar_t[size];
+            MultiByteToWideChar(CP_UTF8, 0, (LPCCH)rsp->Message, -1, wbuffer, size);
+            lpcwstr = wbuffer;
+
+            MessageBox(NULL, lpcwstr, L"", MB_OK);
         }
 
         break;

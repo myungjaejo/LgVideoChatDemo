@@ -40,6 +40,7 @@ typedef struct oRegistration {
 	char LastIPAddress[IP_BUFFSIZE];
 	char LastRegistTime[TIME_STRSIZE];
 	char LoginAttempt;
+	char LastPasswordChange[GENERAL_BUFSIZE];
 }TRegistration;
 
 typedef struct oLogin {
@@ -117,7 +118,7 @@ typedef struct oRspWithMessage2 {
 
 typedef struct oRspResultWithMessage {
 	unsigned char MessageType;
-	int result;
+	bool answer;
 	unsigned char MessageLen;
 	unsigned char Message[GENERAL_BUFSIZE];
 }TRspResultWithMessage;

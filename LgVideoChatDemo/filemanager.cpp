@@ -15,6 +15,7 @@
 #define STR_ADDRESS     "address"
 #define STR_IPADDRESS   "IP"
 #define STR_LASTACCESS  "lastAccess"
+#define STR_LASTPASSWORDCHANGE  "lastPasswordChange"
 
 #include <openssl/aes.h>
 #include <openssl/rand.h>
@@ -137,6 +138,7 @@ bool StoreData(std::vector<TRegistration*> data)
         user[STR_ADDRESS] = fdata->Address;
         user[STR_IPADDRESS] = fdata->LastIPAddress;
         user[STR_LASTACCESS] = fdata->LastRegistTime;
+        user[STR_LASTPASSWORDCHANGE] = fdata->LastPasswordChange;
 
         root.append(user);
     }
@@ -162,6 +164,7 @@ bool StoreData(const TRegistration* data, size_t size)
         user[STR_LAST_NAME] = data[i].lastName;
         user[STR_FIRST_NAME] = data[i].firstName;
         user[STR_ADDRESS] = data[i].Address;
+        user[STR_LASTPASSWORDCHANGE] = data[i].LastPasswordChange;
         root.append(user);
     }
 
@@ -190,6 +193,7 @@ bool LoadData(TRegistration* data, int idx)
     strncpy_s(data->Address, user[STR_ADDRESS].asString().c_str(), 256);
     strncpy_s(data->LastIPAddress, user[STR_IPADDRESS].asString().c_str(), 512);
     strncpy_s(data->LastRegistTime, user[STR_LASTACCESS].asString().c_str(), 512);
+    strncpy_s(data->LastPasswordChange, user[STR_LASTPASSWORDCHANGE].asString().c_str(), 512);
 
     return true;
 }
@@ -274,4 +278,5 @@ void printFileObj(const TRegistration* data)
     std::cout << data->lastName << std::endl;
     std::cout << data->firstName << std::endl;
     std::cout << data->Address << std::endl;
+    std::cout << data->LastPasswordChange << std::endl;
 }

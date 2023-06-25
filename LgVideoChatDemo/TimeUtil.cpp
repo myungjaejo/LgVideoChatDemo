@@ -56,6 +56,7 @@ bool IsTimeDifferenceGreaterThanOneMonth(const SYSTEMTIME& systemTime1, const SY
     time2.HighPart = fileTime2.dwHighDateTime;
 
     const ULONGLONG FILETIME_TICKS_PER_MONTH = 10000000ull * 3600ull * 24ull * 30ull;
+    //const ULONGLONG FILETIME_TICKS_PER_MONTH = 100000000ull; // 10 sec for test perpose
     ULONGLONG difference = (time1.QuadPart > time2.QuadPart) ? (time1.QuadPart - time2.QuadPart) : (time2.QuadPart - time1.QuadPart);
 
     return (difference > FILETIME_TICKS_PER_MONTH);
