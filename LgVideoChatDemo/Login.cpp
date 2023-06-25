@@ -162,7 +162,7 @@ LRESULT CALLBACK LoginProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     TCHAR Passwd[maxPasswdLength] = TEXT("");
                     GetWindowText(hwndEmail, Email, maxEmailLength);
                     GetWindowText(hwndPassword, Passwd, maxPasswdLength);
-                    printf("ID : %ls\nPASSWD : %ls\n", Email, Passwd);
+                    printf("ID : %ls\n", Email);
 
                     if (isAdmin(Email, Passwd))
                     {

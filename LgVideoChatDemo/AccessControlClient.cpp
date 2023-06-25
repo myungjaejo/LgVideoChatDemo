@@ -456,9 +456,11 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
         }
         else
         {
-            devStatus = Disconnected;
-            PostMessage(hWndMain, WM_COMMAND, (WPARAM)IDM_LOGOUT, 0);
+            //devStatus = Disconnected;
+            //PostMessage(hWndMain, WM_COMMAND, (WPARAM)IDM_LOGOUT, 0);
+            PostMessage(hwndLogin, WM_DESTROY, 0, 0);
             std::cout << "Lonin Failed " << std::endl;
+            MessageBox(NULL, L"Login Failed", L"", MB_OK);
         }
 
         break;
@@ -487,11 +489,15 @@ static int RecvHandler(SOCKET __InputSock, char* data, int datasize, sockaddr_in
                 sendMsgtoACS((char*)msg, sizeof(TCommandOnly));
                 free(msg);
             }
+
+            PostMessage(hwndLogin, WM_DESTROY, 0, 0);
+            MessageBox(NULL, L"Login Success", L"", MB_OK);
         }
         else
         {
             devStatus = Disconnected;
             PostMessage(hWndMain, WM_COMMAND, (WPARAM)IDM_LOGOUT, 0);
+            MessageBox(NULL, L"Login Failed", L"", MB_OK);
             std::cout << "Lonin Failed " << std::endl;
         }
         break;
