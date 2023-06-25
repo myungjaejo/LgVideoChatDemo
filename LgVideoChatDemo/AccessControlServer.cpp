@@ -58,11 +58,18 @@ void setMacro(SOCKET __InputSock, TRegistration* regData);
 bool sendCommandOnlyMsg(TSocketManager* smgr, sockaddr_in sockip, int socklen, bool answer);
 bool sendStatusMsg(TSocketManager* smgr, sockaddr_in sockip, int socklen, char* cid, TStatus status);
 int findReceiverIP(char* recID, sockaddr_in* out);
+bool StopAccessControlClient(void);
+
+SSL* ssl[10];
+SSL_CTX* sslContext[10];
+int sslInx = 0;
+int sslCTXInx = 0;
 
 int verify_callback(int preverify_ok, X509_STORE_CTX* ctx);
 void log_callback(const SSL* ssl, int where, int ret);
 int allowEarlyDataCallback(SSL* ssl, void* arg)
 {
+	printf("allowEarlyDataCallback\n");
 	return SSL_EARLY_DATA_ACCEPTED;
 }
 
@@ -91,6 +98,7 @@ bool StopACServer(void)
 		hThreadACServer = INVALID_HANDLE_VALUE;
 	}
 	CleanUpACServer();
+	StopAccessControlClient();
 
 	return true;
 }
@@ -220,6 +228,16 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 		return 1;
 	}
 
+	int ret = BIO_set_tcp_ndelay(Listener, 1);
+	if (ret < 0) {
+		BIO_closesocket(Listener);
+		return 0;
+	}
+	ret = 0;
+
+	int opt = 1;
+	setsockopt(Listener, IPPROTO_TCP, /*TCP_FASTOPEN_CONNECT*/30, (char*)&opt, sizeof(opt));
+
 	// create Events handles
 	std::cout << "create ACServer event....." << std::endl;
 	hACServerListenerEvent = WSACreateEvent();
@@ -324,22 +342,23 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 								return 1;
 							}
 
-							SSL_CTX* sslContext = SSL_CTX_new(SSLv23_server_method());
-							SSL_CTX_set_verify(sslContext, SSL_VERIFY_PEER, verify_callback);
-							SSL_CTX_set_info_callback(sslContext, log_callback);
-							SSL_CTX_set_allow_early_data_cb(sslContext, allowEarlyDataCallback, NULL);
-							if (sslContext == NULL)
+							sslContext[sslCTXInx] = SSL_CTX_new(SSLv23_server_method());
+							SSL_CTX_set_max_early_data(sslContext[sslCTXInx], 1024);
+							SSL_CTX_set_verify(sslContext[sslCTXInx], SSL_VERIFY_PEER, verify_callback);
+							SSL_CTX_set_info_callback(sslContext[sslCTXInx], log_callback);
+							SSL_CTX_set_allow_early_data_cb(sslContext[sslCTXInx], allowEarlyDataCallback, NULL);
+							if (sslContext[sslCTXInx] == NULL)
 							{
 								fprintf(stderr, "Failed to create SSL context.\n");
 								return 1;
 							}
 
-							if (SSL_CTX_use_certificate_file(sslContext, "server.crt", SSL_FILETYPE_PEM) != 1)
+							if (SSL_CTX_use_certificate_file(sslContext[sslCTXInx], "server.crt", SSL_FILETYPE_PEM) != 1)
 							{
 								fprintf(stderr, "Failed to load server certificate.\n");
 								return 1;
 							}
-							if (SSL_CTX_use_PrivateKey_file(sslContext, "server.key", SSL_FILETYPE_PEM) != 1)
+							if (SSL_CTX_use_PrivateKey_file(sslContext[sslCTXInx], "server.key", SSL_FILETYPE_PEM) != 1)
 							{
 								fprintf(stderr, "Failed to load server private key.\n");
 								return 1;
@@ -347,7 +366,24 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 							std::cout << "load key done" << std::endl;
 
 
-							SSL* ssl = SSL_new(sslContext);
+							ssl[sslInx] = SSL_new(sslContext[sslCTXInx]);
+							// Accept a new connection, and add it to the socket and event lists
+							tmp.ASocket = accept(Listener, (struct sockaddr*)&sa, &sa_len);
+							int opt = 1;
+							setsockopt(tmp.ASocket, IPPROTO_TCP, /*TCP_FASTOPEN_CONNECT*/30, (char*)&opt, sizeof(opt));
+
+							int ret = BIO_set_tcp_ndelay(tmp.ASocket, 1);
+							if (ret < 0) {
+								BIO_closesocket(tmp.ASocket);
+								return 0;
+
+							}
+							ret = 0;
+							if (tmp.ASocket == INVALID_SOCKET)
+							{
+								std::cout << "Accept Failed " << std::endl;
+								return 1;
+							}
 
 							if (ssl == NULL)
 							{
@@ -355,20 +391,23 @@ static DWORD WINAPI ThreadACServer(LPVOID ivalue)
 								return 1;
 							}
 
-							if (SSL_set_fd(ssl, tmp.ASocket) != 1)
+							if (SSL_set_fd(ssl[sslInx], tmp.ASocket) != 1)
 							{
 								fprintf(stderr, "Failed to bind SSL socket.\n");
 								return 1;
 							}
 
-							int result = SSL_accept(ssl);
+							int result = SSL_accept(ssl[sslInx]);
 							if (result != 1)
 							{
-								fprintf(stderr, "Failed to perform SSL handshake.\n");
+								printf("Failed to perform SSL handshake.\n");
 								return 1;
 							}
 
-							tmp.ssl = ssl;
+							tmp.ssl = ssl[sslInx];
+
+							sslInx++;
+							sslCTXInx++;
 
 							int err = getnameinfo((struct sockaddr*)&sa, sa_len, RemoteIp, sizeof(RemoteIp), 0, 0, NI_NUMERICHOST);
 							if (err != 0) {
@@ -589,9 +628,9 @@ static int RecvHandler(TSocketManager* smgr, char* data, int datasize, sockaddr_
 			std::vector<TRegistration*>::iterator iter;
 			for (iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
 			{		
-				if (!strncmp((*iter)->email, LoginData->email, (*iter)->EmailSize))
+				if (!strncmp((*iter)->email, LoginData->email, LoginData->EmailSize))
 				{
-					if (!strncmp((*iter)->password, LoginData->passwordHash, (*iter)->PasswordSize))
+					if (!strncmp((*iter)->password, LoginData->passwordHash, LoginData->PasswordHashSize))
 					{						
 						resp = VaildTwoFactor;
 						strcpy_s(myCID, (*iter)->ContactID);
