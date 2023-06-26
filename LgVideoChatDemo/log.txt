@@ -1,0 +1,60 @@
+Guid = {CFD23D6F-2377-4CB4-B307-EB5EB900381A}
+
+Guid = {9D8752FC-12D3-4D1E-81A0-0013B9EA4F10}
+
+Guid = {EDB558F6-C709-4A9F-9521-B765CF369E07}
+
+succeded to send TFA
+succeded to send TFA
+Guid = {BD0CC215-9B38-4A52-A480-B342D80EE481}
+
+Guid = {B349EB99-0723-44FC-B306-1A145A79EFED}
+
+succeded to send TFA
+succeded to send TFA
+Guid = {BDF6EFF4-FEE3-4D90-AE51-469477A8CCE8}
+
+Guid = {F6EE0832-93F5-41EE-B388-F0A4D968A6D7}
+
+succeded to send TFA
+succeded to send TFA
+Guid = {B89D00CF-68EF-421C-8AC6-8EC3CF1BB39F}
+
+succeded to send TFA
+succeded to send TFA
+Guid = {B1B9CAC0-B786-41AF-A434-6EF229D8279A}
+
+succeded to send TFA
+succeded to send TFA
+Guid = {01214114-7B64-4AE6-BB7F-16836EDED6A0}
+
+succeded to send TFA
+succeded to send TFA
+Guid = {DA35605D-8D97-44EC-BDAB-73CC8A44FC8B}
+
+succeded to send TFA
+succeded to send TFA
+Guid = {AFD39629-B4AB-4293-ACD7-ABED42119B3E}
+
+succeded to send TFA
+Guid = {D6A79040-892B-48A6-8959-F4C5B1E6B319}
+
+succeded to send TFA
+Guid = {3B3A6857-5998-47A5-9842-CD114B0765F2}
+
+succeded to send TFA
+Guid = {98E57C01-450E-47B3-8545-D7B0651BDB3D}
+
+succeded to send TFA
+Guid = {385B6F0C-1DF7-48E4-A4F0-9CDFDB4BC156}
+
+Guid = {09481EFF-0807-4261-976D-450BEF4465C0}
+
+Guid = {5D1BEBC8-D784-4265-A4EF-E20C5DAEB82E}
+
+succeded to send TFA
+Guid = {11BC93A7-92CC-4D88-8512-1D9EB82209AC}
+
+succeded to send TFA
+succeded to send TFA
+succeded to send TFA
