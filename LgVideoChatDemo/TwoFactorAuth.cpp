@@ -10,6 +10,7 @@
 #include <windows.h>
 #include <wininet.h>
 #include <stdio.h>
+#include "AccessControlServer.h"
 #include "TwoFactorAuth.h"
 #include "Logger.h"
 
@@ -43,11 +44,14 @@ void MakeRandomToken()
 
 int CheckToken(char* receiver, char* input_token, int sec)
 {
+    char recv_email[256];
+    strcpy_s((char*)recv_email, 256, searchConnectID(receiver));
+
     for (auto iter = tokenMng.begin(); iter != tokenMng.end(); iter++)
     {
-        if (!strcmp(((*iter).first).c_str(), receiver))
+        if (!strcmp(((*iter).first).c_str(), recv_email))
         {
-            std::cout << "Token : " << ((*iter).second).c_str() << " Recv : " << input_token << std::endl;
+            //std::cout << "Token : " << ((*iter).second).c_str() << " Recv : " << input_token << std::endl;
             if (sec >= 0 && sec <= 120)
             {
                 if (!strcmp(((*iter).second).c_str(), input_token))

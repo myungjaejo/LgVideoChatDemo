@@ -1145,6 +1145,15 @@ int findReceiverIP(char* recID, sockaddr_in *out)
 	return 0;
 }
 
+char* searchConnectID(char* CID)
+{
+	for (auto iter = controlDevices.begin(); iter != controlDevices.end(); iter++)
+	{
+		if (!strcmp(CID, (*iter)->ContactID))
+			return (*iter)->email;
+	}
+	return CID;
+}
 
 
 int _tmain(int argc, _TCHAR* argv[])

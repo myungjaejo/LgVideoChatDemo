@@ -8,7 +8,6 @@
 //#include "definition.h"
 #include "LgVideoChatDemo.h"
 #include "AccessControlClient.h"
-#include "AccessControlServer.h"
 #include "ContactList.h"
 #include "include/openssl/sha.h"
 #include <openssl/bio.h>
