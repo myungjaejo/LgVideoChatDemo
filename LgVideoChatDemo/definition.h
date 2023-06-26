@@ -10,7 +10,7 @@
 
 #define ACS_PORT		12000
 #define ACS_DELAY		1000
-#define ACS_IP			"192.168.1.103"
+#define ACS_IP			"192.168.68.103"
 
 #define GENERAL_BUFSIZE		128
 #define EMAIL_BUFSIZE		128

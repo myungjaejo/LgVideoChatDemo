@@ -155,10 +155,9 @@ LRESULT CALLBACK WindowTFAProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
             if (devStatus == ResetPassword)
                 tMsg->MessageType = ChangePasswordRequest;
             else
-            {
                 tMsg->MessageType = TwoFactorRequest;
-                strcpy_s(tMsg->myCID, MyID);
-            }
+            
+            strcpy_s(tMsg->myCID, MyID);
             exchangeTCHToChar(InputTFA, tMsg->TFA);
             std::cout << tMsg->TFA << std::endl;
             
@@ -172,7 +171,7 @@ LRESULT CALLBACK WindowTFAProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
         {
             TTwoFactor* tMsg = (TTwoFactor*)std::malloc(sizeof(TTwoFactor));
             tMsg->MessageType = TwoFactorRequest;
-
+            strcpy_s(tMsg->myCID, MyID);
             sendMsgtoACS((char*)tMsg, sizeof(TTwoFactor));
             free(tMsg);
             //strcpy_s(MyID. NULL);
